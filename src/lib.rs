@@ -3,12 +3,15 @@ use crate::error::Error;
 
 mod config;
 mod error;
+mod stats;
 
 pub fn run() -> Result<(), Error> {
     let config = get_config()?;
-    match config.input {
-        None => { println!("No input files provided.") }
-        Some(inputs) => { println!("{} files provided", inputs.len()) }
+    if config.inputs.is_empty() {
+        return Err(Error::from("Need to specify at least one input file."));
+    }
+    for input in config.inputs {
+        println!("{}", input)
     }
     Ok(())
 }

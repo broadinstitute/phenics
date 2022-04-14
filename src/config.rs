@@ -1,8 +1,9 @@
 use clap::{command, Arg};
 use crate::error::Error;
+use crate::error;
 
 pub(crate) struct Config {
-    pub(crate) input: Option<Vec<String>>,
+    pub(crate) inputs: Vec<String>,
 }
 
 pub(crate) fn get_config() -> Result<Config, Error> {
@@ -19,6 +20,8 @@ pub(crate) fn get_config() -> Result<Config, Error> {
         );
     let matches = app.try_get_matches()?;
     let input =
-        matches.values_of(INPUT).map(|values| { values.map(String::from).collect() });
-    Ok(Config { input })
+        error::none_to_error(matches.values_of(INPUT),
+                             "Need to specify input files")?
+            .map(String::from).collect();
+    Ok(Config { inputs: input })
 }
