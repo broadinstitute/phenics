@@ -4,6 +4,7 @@ use std::collections::HashMap;
 pub(crate) struct Stats {
     keys: Vec<HashKey>,
     sample_ids: HashMap<HashKey, String>,
+    n_records: u64,
 }
 
 impl Stats {
@@ -15,9 +16,14 @@ impl Stats {
             keys.push(key);
             sample_ids_map.insert(key, sample_id);
         }
-        Stats { keys, sample_ids: sample_ids_map }
+        let n_records = 0u64;
+        Stats { keys, sample_ids: sample_ids_map, n_records }
     }
-    pub(crate) fn add(&mut self, o_stats: Stats) {
+    pub(crate) fn add_record(&mut self) {
+        self.n_records += 1;
+    }
+    pub(crate) fn merge_stats(&mut self, o_stats: Stats) {
+        self.n_records += &o_stats.n_records();
         let mut sample_ids = o_stats.sample_ids;
         for key in o_stats.keys.into_iter() {
             if self.sample_ids.contains_key(&key) {
@@ -30,7 +36,13 @@ impl Stats {
             }
         }
     }
+    pub(crate) fn n_samples(&self) -> usize {
+        self.keys.len()
+    }
+    pub(crate) fn n_records(&self) -> u64 {
+        self.n_records
+    }
     pub(crate) fn create_summary(&self) -> String {
-        format!("{} samples.", self.keys.len())
+        format!("{} samples, {} records.", self.n_samples(), self.n_records())
     }
 }
