@@ -1,7 +1,7 @@
 use std::hash::{Hasher, Hash};
 use std::collections::hash_map::DefaultHasher;
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone, Copy, Hash)]
 pub(crate) struct HashKey {
     hash1: u64,
     hash2: u64,
