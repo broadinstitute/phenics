@@ -1,3 +1,5 @@
+mod sample_stats;
+
 use crate::hash_key::HashKey;
 use std::collections::HashMap;
 

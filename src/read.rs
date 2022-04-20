@@ -20,6 +20,7 @@ pub(crate) fn read_vcf(file: &str) -> Result<Stats, Error> {
                             record.position(), genotypes.len(), stats.n_samples())
                 ));
         }
+
         stats.add_record();
     }
     Ok(stats)
