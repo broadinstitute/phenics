@@ -7,6 +7,7 @@ mod error;
 mod stats;
 mod read;
 mod hash_key;
+mod locus;
 
 pub fn run() -> Result<(), Error> {
     let config = get_config()?;

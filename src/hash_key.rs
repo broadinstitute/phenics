@@ -21,3 +21,4 @@ impl From<&str> for HashKey {
         HashKey { hash1, hash2 }
     }
 }
+
