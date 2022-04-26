@@ -1,6 +1,6 @@
 use clap::{command, Arg, Values};
 use crate::error::Error;
-use crate::error;
+use crate::{error, phenotype};
 use crate::phenotype::Phenotype;
 
 pub(crate) struct Config {
@@ -11,7 +11,7 @@ pub(crate) struct Config {
 fn parse_phenotypes(phenotype_args: Values) -> Result<Vec<Phenotype>, Error> {
     let mut phenotypes = Vec::<Phenotype>::new();
     for arg in phenotype_args {
-        phenotypes.push(Phenotype::parse(arg)?);
+        phenotypes.push(phenotype::parse::parse(arg)?);
     }
     Ok(phenotypes)
 }
