@@ -8,6 +8,7 @@ mod stats;
 mod read;
 mod hash_key;
 mod locus;
+mod phenotype;
 
 pub fn run() -> Result<(), Error> {
     let config = get_config()?;
