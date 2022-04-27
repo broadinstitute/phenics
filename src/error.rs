@@ -2,6 +2,8 @@ use std::fmt::{Display, Formatter};
 use std::io;
 use noodles::vcf;
 use noodles::vcf::record::genotypes::genotype::GenotypeError;
+use rand::distributions::WeightedError;
+use rand_distr::NormalError;
 
 pub enum Error {
     Phenics(String),
@@ -9,6 +11,8 @@ pub enum Error {
     IO(io::Error),
     VcfHeaderParse(vcf::header::ParseError),
     Genotype(GenotypeError),
+    Weighted(WeightedError),
+    Normal(NormalError),
 }
 
 pub(crate) fn none_to_error<T>(option: Option<T>, message: &str) -> Result<T, Error> {
@@ -45,6 +49,14 @@ impl From<GenotypeError> for Error {
     fn from(genotype_error: GenotypeError) -> Self { Error::Genotype(genotype_error) }
 }
 
+impl From<WeightedError> for Error {
+    fn from(weighted_error: WeightedError) -> Self { Error::Weighted(weighted_error) }
+}
+
+impl From<NormalError> for Error {
+    fn from(normal_error: NormalError) -> Self { Error::Normal(normal_error) }
+}
+
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -52,7 +64,9 @@ impl Display for Error {
             Error::Clap(clap_error) => { writeln!(f, "{}", clap_error) }
             Error::IO(io_error) => { writeln!(f, "{}", io_error) }
             Error::VcfHeaderParse(parse_error) => { writeln!(f, "{}", parse_error) }
-            Error::Genotype(genotype_error) => { writeln!(f, "{}", genotype_error)}
+            Error::Genotype(genotype_error) => { writeln!(f, "{}", genotype_error) }
+            Error::Weighted(weighted_error) => { writeln!(f, "{}", weighted_error) }
+            Error::Normal(normal_error) => { writeln!(f, "{}", normal_error) }
         }
     }
 }
