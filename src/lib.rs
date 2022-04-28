@@ -4,7 +4,7 @@ use crate::read::read_vcf;
 
 mod config;
 mod error;
-mod stats;
+mod sim;
 mod read;
 mod hash_key;
 mod locus;
@@ -19,11 +19,11 @@ pub fn run() -> Result<(), Error> {
         }
         Some(input) => {
             println!("Next reading {}", input);
-            let mut stats_all = read_vcf(input)?;
+            let mut stats_all = read_vcf(input, &config.phenotypes)?;
             println!("File: {}", stats_all.create_summary());
             for input in inputs_iter {
                 println!("Next reading {}", input);
-                let stats_input = read_vcf(input)?;
+                let stats_input = read_vcf(input, &config.phenotypes)?;
                 println!("File: {}", stats_input.create_summary());
                 stats_all.merge_stats(stats_input);
                 println!("All : {}", stats_all.create_summary());

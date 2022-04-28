@@ -4,7 +4,7 @@ use rand::Rng;
 use crate::error::Error;
 
 pub(crate) struct PhenoSim {
-    effect_distribution: MyDistribution,
+    pub(crate) effect_distribution: MyDistribution,
     heritability: f64,
     category: Category,
 }

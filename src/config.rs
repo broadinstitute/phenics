@@ -5,7 +5,7 @@ use crate::phenotype::Phenotype;
 
 pub(crate) struct Config {
     pub(crate) inputs: Vec<String>,
-    phenotypes: Vec<Phenotype>
+    pub(crate) phenotypes: Vec<Phenotype>
 }
 
 fn parse_phenotypes(phenotype_args: Values) -> Result<Vec<Phenotype>, Error> {

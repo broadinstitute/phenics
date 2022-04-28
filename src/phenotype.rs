@@ -4,8 +4,8 @@ pub(crate) mod parse;
 mod pheno_sim;
 
 pub(crate) struct Phenotype {
-    name: String,
-    sim: PhenoSim
+    pub(crate) name: String,
+    pub(crate) sim: PhenoSim
 }
 
 impl Phenotype {
