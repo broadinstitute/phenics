@@ -13,7 +13,10 @@ pub(super) fn analyze(call: Call) -> Result<PhenoSim, Error> {
     let mut args_iter = call.args.into_iter();
     let effect_distribution = distribution(args_iter.next().unwrap())?;
     let heritability = number(args_iter.next().unwrap())?;
-    todo!()
+    let category =
+        args_iter.next().map(|tree| { category(tree) }).transpose()?
+            .unwrap_or(Category::Quantitative);
+    Ok(PhenoSim::new(effect_distribution, heritability, category))
 }
 
 fn distribution(tree: Tree) -> Result<MyDistribution, Error> {
@@ -95,11 +98,22 @@ fn category(tree: Tree) -> Result<Category, Error> {
 
 fn bin(call: Call) -> Result<Category, Error> {
     if call.args.is_empty() {
-        return Err(Error::from(
-            format!("Bin needs as least one argument"))
-        );
+        return Err(Error::from("Bin needs as least one argument"));
     }
     let mut args_iter = call.args.into_iter();
     let prevalence = number(args_iter.next().unwrap())?;
-    todo!()
+    let case =
+        args_iter.next().map(|tree| { value(tree) }).transpose()?
+            .map(|value| { format!("{}", value) }).unwrap_or_else(|| String::from("case"));
+    let control =
+        args_iter.next().map(|tree| { value(tree) }).transpose()?
+            .map(|value| { format!("{}", value) }).unwrap_or_else(|| String::from("control"));
+    Ok(Category::Binary(prevalence, case, control))
+}
+
+fn value(tree: Tree) -> Result<Value, Error> {
+    match tree {
+        Tree::Call(_) => { Err(Error::from("Argument needs to be a value.")) }
+        Tree::Value(value) => { Ok(value) }
+    }
 }

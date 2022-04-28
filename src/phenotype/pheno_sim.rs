@@ -4,9 +4,9 @@ use rand::Rng;
 use crate::error::Error;
 
 pub(crate) struct PhenoSim {
-    category: Category,
-    heritability: f64,
     effect_distribution: MyDistribution,
+    heritability: f64,
+    category: Category,
 }
 
 pub(crate) enum Category {
@@ -27,6 +27,13 @@ pub(crate) struct StuckDistribution {
 pub(crate) struct PickDistribution {
     index_distribution: WeightedIndex<f64>,
     distributions: Vec<MyDistribution>,
+}
+
+impl PhenoSim {
+    pub(crate) fn new(effect_distribution: MyDistribution, heritability: f64, category: Category)
+        -> PhenoSim {
+        PhenoSim { effect_distribution, heritability, category }
+    }
 }
 
 impl StuckDistribution {
