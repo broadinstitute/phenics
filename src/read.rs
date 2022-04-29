@@ -13,7 +13,7 @@ pub(crate) fn read_vcf(file: &str, phenotypes: &[Phenotype]) -> Result<Sim, Erro
         vcf::Reader::new(bgzf::Reader::new(File::open(file)?));
     let header = reader.read_header()?.parse::<Header>()?;
     let sample_ids: Vec<String> = header.sample_names().iter().map(String::from).collect();
-    let mut sim = Sim::new(sample_ids, phenotypes.len());
+    let mut sim = Sim::new(sample_ids, phenotypes);
     for record in reader.records(&header) {
         let record = record?;
         let genotypes = record.genotypes().genotypes()?;

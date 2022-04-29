@@ -6,7 +6,6 @@ mod config;
 mod error;
 mod sim;
 mod read;
-mod hash_key;
 mod locus;
 mod phenotype;
 
@@ -19,14 +18,14 @@ pub fn run() -> Result<(), Error> {
         }
         Some(input) => {
             println!("Next reading {}", input);
-            let mut stats_all = read_vcf(input, &config.phenotypes)?;
-            println!("File: {}", stats_all.create_summary());
+            let mut sim_all = read_vcf(input, &config.phenotypes)?;
+            println!("File: {}", sim_all.create_summary());
             for input in inputs_iter {
                 println!("Next reading {}", input);
-                let stats_input = read_vcf(input, &config.phenotypes)?;
-                println!("File: {}", stats_input.create_summary());
-                stats_all.merge_stats(stats_input);
-                println!("All : {}", stats_all.create_summary());
+                let sim_input = read_vcf(input, &config.phenotypes)?;
+                println!("File: {}", sim_input.create_summary());
+                sim_all = sim_all.try_add(&sim_input)?;
+                println!("All : {}", sim_all.create_summary());
             }
         }
     }
