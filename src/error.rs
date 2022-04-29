@@ -4,6 +4,7 @@ use noodles::vcf;
 use noodles::vcf::record::genotypes::genotype::GenotypeError;
 use rand::distributions::WeightedError;
 use rand_distr::NormalError;
+use std::num::ParseIntError;
 
 pub enum Error {
     Phenics(String),
@@ -13,6 +14,7 @@ pub enum Error {
     Genotype(GenotypeError),
     Weighted(WeightedError),
     Normal(NormalError),
+    ParseInt(ParseIntError),
 }
 
 pub(crate) fn none_to_error<T>(option: Option<T>, message: &str) -> Result<T, Error> {
@@ -57,6 +59,10 @@ impl From<NormalError> for Error {
     fn from(normal_error: NormalError) -> Self { Error::Normal(normal_error) }
 }
 
+impl From<ParseIntError> for Error {
+    fn from(parse_int_error: ParseIntError) -> Self { Error::ParseInt(parse_int_error) }
+}
+
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -67,6 +73,7 @@ impl Display for Error {
             Error::Genotype(genotype_error) => { writeln!(f, "{}", genotype_error) }
             Error::Weighted(weighted_error) => { writeln!(f, "{}", weighted_error) }
             Error::Normal(normal_error) => { writeln!(f, "{}", normal_error) }
+            Error::ParseInt(parse_int_error) => { writeln!(f, "{}", parse_int_error) }
         }
     }
 }

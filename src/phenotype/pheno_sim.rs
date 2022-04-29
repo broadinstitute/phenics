@@ -3,6 +3,7 @@ use rand_distr::Normal;
 use rand::Rng;
 use crate::error::Error;
 
+#[derive(Clone)]
 pub(crate) struct PhenoSim {
     pub(crate) effect_distribution: MyDistribution,
     heritability: f64,
@@ -14,12 +15,14 @@ pub(crate) enum Category {
     Binary(f64, String, String),
 }
 
+#[derive(Clone)]
 pub(crate) enum MyDistribution {
     Stuck(StuckDistribution),
     Norm(Normal<f64>),
     Pick(PickDistribution),
 }
 
+#[derive(Clone)]
 pub(crate) struct StuckDistribution {
     value: f64,
 }
@@ -82,6 +85,25 @@ impl Distribution<f64> for MyDistribution {
             MyDistribution::Norm(norm) => { norm.sample(rng) }
             MyDistribution::Pick(pick) => { pick.sample(rng) }
         }
+    }
+}
+
+impl Clone for Category {
+    fn clone(&self) -> Self {
+        match self {
+            Category::Quantitative => { Category::Quantitative }
+            Category::Binary(prevalence, case, control) => {
+                Category::Binary(*prevalence, case.clone(), control.clone())
+            }
+        }
+    }
+}
+
+impl Clone for PickDistribution {
+    fn clone(&self) -> Self {
+        let index_distribution = self.index_distribution.clone();
+        let distributions = self.distributions.clone();
+        PickDistribution { index_distribution, distributions }
     }
 }
 

@@ -1,19 +1,10 @@
-use clap::{command, Arg, Values};
+use clap::{command, Arg};
 use crate::error::Error;
-use crate::{error, phenotype};
-use crate::phenotype::Phenotype;
+use crate::error;
 
 pub(crate) struct Config {
     pub(crate) inputs: Vec<String>,
-    pub(crate) phenotypes: Vec<Phenotype>
-}
-
-fn parse_phenotypes(phenotype_args: Values) -> Result<Vec<Phenotype>, Error> {
-    let mut phenotypes = Vec::<Phenotype>::new();
-    for arg in phenotype_args {
-        phenotypes.push(phenotype::parse::parse(arg)?);
-    }
-    Ok(phenotypes)
+    pub(crate) phenotype_file: String
 }
 
 pub(crate) fn get_config() -> Result<Config, Error> {
@@ -33,17 +24,16 @@ pub(crate) fn get_config() -> Result<Config, Error> {
             .short('p')
             .long(PHENOTYPE)
             .takes_value(true)
-            .value_name("PHENOTYPE")
-            .multiple_values(true)
-            .help("Phenotype definition")
+            .value_name("FILE")
+            .help("Phenotype definitions file")
         );
     let matches = app.try_get_matches()?;
     let inputs =
         error::none_to_error(matches.values_of(INPUT),
                              "Need to specify input files")?
             .map(String::from).collect();
-    let phenotypes =
-        parse_phenotypes(error::none_to_error(matches.values_of(PHENOTYPE),
-                                              "Need to specify phenotype definitions")?)?;
-    Ok(Config { inputs, phenotypes })
+    let phenotype_file =
+        String::from(error::none_to_error(matches.value_of(PHENOTYPE),
+                                              "Need to specify phenotype definitions")?);
+    Ok(Config { inputs, phenotype_file })
 }
