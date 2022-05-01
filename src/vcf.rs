@@ -1,10 +1,10 @@
 use crate::config::VcfConfig;
 use crate::error::Error;
-use crate::phenotype;
+use crate::{phenotype, sim};
 use crate::read::read_vcf;
 
 pub(crate) fn process_vcf(vcf_config: &VcfConfig) -> Result<(), Error> {
-    let mut inputs_iter = vcf_config.input.iter();
+    let mut inputs_iter = vcf_config.inputs.iter();
     match inputs_iter.next() {
         None => {
             return Err(Error::from("Need to specify at least one input file."));
@@ -23,6 +23,7 @@ pub(crate) fn process_vcf(vcf_config: &VcfConfig) -> Result<(), Error> {
                 sim_all = sim_all.try_add(&sim_input)?;
                 println!("All : {}", sim_all.create_summary());
             }
+            sim::write::write(&sim_all, &vcf_config.output)?;
         }
     }
     Ok(())

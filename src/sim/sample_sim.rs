@@ -3,10 +3,10 @@ use crate::sim::allele_sim::AlleleSim;
 use crate::error::Error;
 
 pub(crate) struct SampleSim {
-    id: String,
-    effects: Vec<f64>,
-    n_unknown_genotypes: u64,
-    n_unknown_alleles: u64,
+    pub(crate) id: String,
+    pub(crate) effects: Vec<f64>,
+    pub(crate) n_unknown_genotypes: u64,
+    pub(crate) n_unknown_alleles: u64,
 }
 
 impl SampleSim {

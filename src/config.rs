@@ -7,13 +7,15 @@ pub(crate) enum Config {
 }
 
 pub(crate) struct VcfConfig {
-    pub(crate) input: Vec<String>,
+    pub(crate) inputs: Vec<String>,
     pub(crate) phenotype_file: String,
+    pub(crate) output: String,
 }
 
 pub(crate) fn get_config() -> Result<Config, Error> {
     const VCF: &str = "vcf";
     const INPUT: &str = "input";
+    const OUTPUT: &str = "OUTPUT";
     const PHENOTYPE: &str = "phenotype";
     let app = command!()
         .subcommand(
@@ -34,6 +36,13 @@ pub(crate) fn get_config() -> Result<Config, Error> {
                     .value_name("FILE")
                     .help("Phenotype definitions file")
                 )
+                .arg(Arg::new(OUTPUT)
+                    .short('o')
+                    .long(OUTPUT)
+                    .takes_value(true)
+                    .value_name("FILE")
+                    .help("Output file")
+                )
         );
     let arg_matches = app.try_get_matches()?;
     match arg_matches.subcommand() {
@@ -45,7 +54,10 @@ pub(crate) fn get_config() -> Result<Config, Error> {
             let phenotype_file =
                 String::from(error::none_to_error(vcf_matches.value_of(PHENOTYPE),
                                                   "Need to specify phenotype definitions")?);
-            Ok(Config::Vcf(VcfConfig { input: inputs, phenotype_file }))
+            let output =
+                String::from(error::none_to_error(vcf_matches.value_of(OUTPUT),
+                                                  "Need to specify output file.")?);
+            Ok(Config::Vcf(VcfConfig { inputs, phenotype_file, output }))
         }
         Some(match_with_sub) => {
             let subcommand_name = match_with_sub.0;
