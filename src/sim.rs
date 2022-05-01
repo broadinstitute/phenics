@@ -1,7 +1,7 @@
 pub(crate) mod sample_sim;
 pub(crate) mod genotype_sim;
 pub(crate) mod allele_sim;
-pub(crate) mod write;
+pub(crate) mod io;
 
 use crate::error::Error;
 use crate::sim::genotype_sim::GenotypeSim;

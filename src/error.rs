@@ -4,7 +4,7 @@ use noodles::vcf;
 use noodles::vcf::record::genotypes::genotype::GenotypeError;
 use rand::distributions::WeightedError;
 use rand_distr::NormalError;
-use std::num::ParseIntError;
+use std::num::{ParseIntError, ParseFloatError};
 
 pub enum Error {
     Phenics(String),
@@ -15,6 +15,7 @@ pub enum Error {
     Weighted(WeightedError),
     Normal(NormalError),
     ParseInt(ParseIntError),
+    ParseFloat(ParseFloatError),
 }
 
 pub(crate) fn none_to_error<T>(option: Option<T>, message: &str) -> Result<T, Error> {
@@ -63,6 +64,10 @@ impl From<ParseIntError> for Error {
     fn from(parse_int_error: ParseIntError) -> Self { Error::ParseInt(parse_int_error) }
 }
 
+impl From<ParseFloatError> for Error {
+    fn from(parse_float_error: ParseFloatError) -> Self { Error::ParseFloat(parse_float_error) }
+}
+
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -74,6 +79,9 @@ impl Display for Error {
             Error::Weighted(weighted_error) => { writeln!(f, "{}", weighted_error) }
             Error::Normal(normal_error) => { writeln!(f, "{}", normal_error) }
             Error::ParseInt(parse_int_error) => { writeln!(f, "{}", parse_int_error) }
+            Error::ParseFloat(parse_float_error) => {
+                writeln!(f, "{}", parse_float_error)
+            }
         }
     }
 }

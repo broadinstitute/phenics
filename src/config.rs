@@ -5,6 +5,7 @@ use crate::error;
 pub(crate) enum Config {
     Check(CheckConfig),
     Vcf(VcfConfig),
+    Merge(MergeConfig),
 }
 
 pub(crate) struct CheckConfig {
@@ -17,9 +18,15 @@ pub(crate) struct VcfConfig {
     pub(crate) output: String,
 }
 
+pub(crate) struct MergeConfig {
+    pub(crate) inputs: Vec<String>,
+    pub(crate) output: String,
+}
+
 pub(crate) fn get_config() -> Result<Config, Error> {
     const CHECK: &str = "check";
     const VCF: &str = "vcf";
+    const MERGE: &str = "merge";
     const INPUT: &str = "input";
     const OUTPUT: &str = "OUTPUT";
     const PHENOTYPE: &str = "phenotype";
@@ -60,6 +67,25 @@ pub(crate) fn get_config() -> Result<Config, Error> {
                     .value_name("FILE")
                     .help("Output file")
                 )
+        )
+        .subcommand(
+            Command::new(MERGE)
+                .arg_required_else_help(true)
+                .arg(Arg::new(INPUT)
+                    .short('i')
+                    .long(INPUT)
+                    .takes_value(true)
+                    .value_name("FILE")
+                    .multiple_values(true)
+                    .help("Input files (liabilities)")
+                )
+                .arg(Arg::new(OUTPUT)
+                    .short('o')
+                    .long(OUTPUT)
+                    .takes_value(true)
+                    .value_name("FILE")
+                    .help("Output file")
+                )
         );
     let arg_matches = app.try_get_matches()?;
     match arg_matches.subcommand() {
@@ -83,6 +109,16 @@ pub(crate) fn get_config() -> Result<Config, Error> {
                 String::from(error::none_to_error(vcf_matches.value_of(OUTPUT),
                                                   "Need to specify output file.")?);
             Ok(Config::Vcf(VcfConfig { inputs, phenotype_file, output }))
+        }
+        Some((MERGE, merge_matches)) => {
+            let inputs =
+                error::none_to_error(merge_matches.values_of(INPUT),
+                                     "Need to specify input files")?
+                    .map(String::from).collect();
+            let output =
+                String::from(error::none_to_error(merge_matches.value_of(OUTPUT),
+                                                  "Need to specify output file.")?);
+            Ok(Config::Merge(MergeConfig { inputs, output }))
         }
         Some(match_with_sub) => {
             let subcommand_name = match_with_sub.0;
