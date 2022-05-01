@@ -3,7 +3,12 @@ use crate::error::Error;
 use crate::error;
 
 pub(crate) enum Config {
-    Vcf(VcfConfig)
+    Check(CheckConfig),
+    Vcf(VcfConfig),
+}
+
+pub(crate) struct CheckConfig {
+    pub(crate) phenotype_file: String,
 }
 
 pub(crate) struct VcfConfig {
@@ -13,11 +18,23 @@ pub(crate) struct VcfConfig {
 }
 
 pub(crate) fn get_config() -> Result<Config, Error> {
+    const CHECK: &str = "check";
     const VCF: &str = "vcf";
     const INPUT: &str = "input";
     const OUTPUT: &str = "OUTPUT";
     const PHENOTYPE: &str = "phenotype";
     let app = command!()
+        .subcommand(
+            Command::new(CHECK)
+                .arg_required_else_help(true)
+                .arg(Arg::new(PHENOTYPE)
+                    .short('p')
+                    .long(PHENOTYPE)
+                    .takes_value(true)
+                    .value_name("FILE")
+                    .help("Phenotype definitions file")
+                )
+        )
         .subcommand(
             Command::new(VCF)
                 .arg_required_else_help(true)
@@ -46,14 +63,22 @@ pub(crate) fn get_config() -> Result<Config, Error> {
         );
     let arg_matches = app.try_get_matches()?;
     match arg_matches.subcommand() {
+        Some((CHECK, check_matches)) => {
+            let phenotype_file =
+                String::from(
+                    error::none_to_error(check_matches.value_of(PHENOTYPE),
+                                         "Need to specify phenotype definitions")?);
+            Ok(Config::Check(CheckConfig { phenotype_file }))
+        }
         Some((VCF, vcf_matches)) => {
             let inputs =
                 error::none_to_error(vcf_matches.values_of(INPUT),
                                      "Need to specify input files")?
                     .map(String::from).collect();
             let phenotype_file =
-                String::from(error::none_to_error(vcf_matches.value_of(PHENOTYPE),
-                                                  "Need to specify phenotype definitions")?);
+                String::from(
+                    error::none_to_error(vcf_matches.value_of(PHENOTYPE),
+                                         "Need to specify phenotype definitions")?);
             let output =
                 String::from(error::none_to_error(vcf_matches.value_of(OUTPUT),
                                                   "Need to specify output file.")?);

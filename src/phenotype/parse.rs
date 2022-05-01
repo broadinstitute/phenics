@@ -24,7 +24,7 @@ pub(crate) fn parse(string: &str) -> Result<Vec<Phenotype>, Error> {
     let sim = parse_sim(definition)?;
     let phenotypes =
         parse_names(&name_string)?.into_iter()
-            .map(|name|{Phenotype::new(name, sim.clone())}).collect();
+            .map(|name| { Phenotype::new(name, sim.clone()) }).collect();
     Ok(phenotypes)
 }
 

@@ -2,6 +2,7 @@ use rand::distributions::{Distribution, WeightedIndex};
 use rand_distr::Normal;
 use rand::Rng;
 use crate::error::Error;
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone)]
 pub(crate) struct PhenoSim {
@@ -104,6 +105,42 @@ impl Clone for PickDistribution {
         let index_distribution = self.index_distribution.clone();
         let distributions = self.distributions.clone();
         PickDistribution { index_distribution, distributions }
+    }
+}
+
+impl Display for PhenoSim {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self.category {
+            Category::Quantitative => {
+                write!(f, "{},{}", self.effect_distribution, self.heritability)
+            }
+            Category::Binary(prevalence, case, control) => {
+                write!(f, "{},{},bin({},{},{})", self.effect_distribution, self.heritability,
+                prevalence, case, control)
+            }
+        }
+    }
+}
+
+impl Display for MyDistribution {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MyDistribution::Stuck(stuck) => { write!(f, "{}", stuck.value)}
+            MyDistribution::Norm(norm) => {
+                write!(f, "norm({},{})", norm.mean(), norm.std_dev())
+            }
+            MyDistribution::Pick(pick) => { write!(f, "{}", pick)}
+        }
+    }
+}
+
+impl Display for PickDistribution {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let args =
+            self.distributions.iter().map(|dist|{
+                format!("?,{}", dist)
+            }).collect::<Vec<String>>().join(",");
+        write!(f, "pick({})", args)
     }
 }
 

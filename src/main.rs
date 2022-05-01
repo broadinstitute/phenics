@@ -2,9 +2,7 @@ use phenics::run;
 
 fn main() {
   match run() {
-    Ok(_) => { /* No-op */ }
-    Err(error) => {
-      eprintln!("{}", error)
-    }
+    Ok(_) => { eprintln!("Done!") }
+    Err(error) => { eprintln!("{}", error) }
   }
 }
