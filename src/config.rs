@@ -6,6 +6,7 @@ pub(crate) enum Config {
     Check(CheckConfig),
     Vcf(VcfConfig),
     Merge(MergeConfig),
+    Render(RenderConfig),
 }
 
 pub(crate) struct CheckConfig {
@@ -23,13 +24,28 @@ pub(crate) struct MergeConfig {
     pub(crate) output: String,
 }
 
+pub(crate) struct RenderConfig {
+    pub(crate) inputs: Vec<String>,
+    pub(crate) phenotype_file: String,
+    pub(crate) output: String,
+}
+
+const CHECK: &str = "check";
+const VCF: &str = "vcf";
+const MERGE: &str = "merge";
+const RENDER: &str = "render";
+const INPUT: &str = "input";
+const OUTPUT: &str = "OUTPUT";
+const PHENOTYPE: &str = "phenotype";
+
+fn subcommand_problem(problem: &str) -> Result<Config, Error> {
+    let message =
+        format!("{}. Available are '{}', '{}', '{}' and '{}'.",
+                problem, CHECK, VCF, MERGE, RENDER);
+    Err(Error::from(message))
+}
+
 pub(crate) fn get_config() -> Result<Config, Error> {
-    const CHECK: &str = "check";
-    const VCF: &str = "vcf";
-    const MERGE: &str = "merge";
-    const INPUT: &str = "input";
-    const OUTPUT: &str = "OUTPUT";
-    const PHENOTYPE: &str = "phenotype";
     let app = command!()
         .subcommand(
             Command::new(CHECK)
@@ -86,7 +102,33 @@ pub(crate) fn get_config() -> Result<Config, Error> {
                     .value_name("FILE")
                     .help("Output file")
                 )
-        );
+        ).subcommand(
+        Command::new(RENDER)
+            .arg_required_else_help(true)
+            .arg(Arg::new(INPUT)
+                .short('i')
+                .long(INPUT)
+                .takes_value(true)
+                .value_name("FILE")
+                .multiple_values(true)
+                .help("Input files (liabilities)")
+            )
+            .arg(Arg::new(PHENOTYPE)
+                .short('p')
+                .long(PHENOTYPE)
+                .takes_value(true)
+                .value_name("FILE")
+                .help("Phenotype definitions file")
+            )
+            .arg(Arg::new(OUTPUT)
+                .short('o')
+                .long(OUTPUT)
+                .takes_value(true)
+                .value_name("FILE")
+                .help("Output file")
+            )
+    )
+        ;
     let arg_matches = app.try_get_matches()?;
     match arg_matches.subcommand() {
         Some((CHECK, check_matches)) => {
@@ -120,13 +162,26 @@ pub(crate) fn get_config() -> Result<Config, Error> {
                                                   "Need to specify output file.")?);
             Ok(Config::Merge(MergeConfig { inputs, output }))
         }
+        Some((RENDER, render_matches)) => {
+            let inputs =
+                error::none_to_error(render_matches.values_of(INPUT),
+                                     "Need to specify input files")?
+                    .map(String::from).collect();
+            let phenotype_file =
+                String::from(
+                    error::none_to_error(render_matches.value_of(PHENOTYPE),
+                                         "Need to specify phenotype definitions")?);
+            let output =
+                String::from(error::none_to_error(render_matches.value_of(OUTPUT),
+                                                  "Need to specify output file.")?);
+            Ok(Config::Render(RenderConfig { inputs, phenotype_file, output }))
+        }
         Some(match_with_sub) => {
             let subcommand_name = match_with_sub.0;
-            Err(Error::from(format!("Unknown subcommand {}. Available is only {}.",
-                                    subcommand_name, VCF)))
+            subcommand_problem(&format!("Unknown subcommand {}.", subcommand_name))
         }
         None => {
-            Err(Error::from(format!("Missing. Available is only {}.", VCF)))
+            subcommand_problem("Missing subcommand")
         }
     }
 }

@@ -4,6 +4,7 @@ use std::io::{BufWriter, BufReader, BufRead};
 use fs_err::File;
 use std::io::Write;
 use crate::sim::sample_sim::SampleSim;
+use crate::sim;
 
 const N_RECORDS: &str = "n_records";
 const HEADER_PREFIX: &str = "#id\tn_no_gt\tn_no_alt";
@@ -87,4 +88,26 @@ pub(crate) fn read(file: &str) -> Result<Sim, Error> {
     let n_records = n_records.ok_or_else(|| { missing(N_RECORDS) })?;
     let phenotype_names = phenotype_names.ok_or_else(|| { missing(N_RECORDS) })?;
     Ok(Sim { phenotype_names, sample_sims, n_records })
+}
+
+pub(crate) fn read_merge(inputs: &[String]) -> Result<Sim, Error> {
+    let mut inputs_iter = inputs.iter();
+    match inputs_iter.next() {
+        None => {
+            Err(Error::from("Need to specify at least one input file."))
+        }
+        Some(input) => {
+            println!("Next reading {}", input);
+            let mut sim_all = sim::io::read(input)?;
+            println!("File: {}", sim_all.create_summary());
+            for input in inputs_iter {
+                println!("Next reading {}", input);
+                let sim_input = sim::io::read(input)?;
+                println!("File: {}", sim_input.create_summary());
+                sim_all = sim_all.try_add(&sim_input)?;
+                println!("All : {}", sim_all.create_summary());
+            }
+            Ok(sim_all)
+        }
+    }
 }

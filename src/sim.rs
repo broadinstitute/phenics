@@ -9,6 +9,7 @@ use crate::locus::Locus;
 use crate::sim::sample_sim::SampleSim;
 use crate::sim::allele_sim::AlleleSim;
 use crate::phenotype::Phenotype;
+use crate::stats::Stats;
 
 pub(crate) struct Sim {
     phenotype_names: Vec<String>,
@@ -90,5 +91,9 @@ impl Sim {
     }
     pub(crate) fn create_summary(&self) -> String {
         format!("{} samples, {} records.", self.n_samples(), self.n_records())
+    }
+    pub(crate) fn render_phenotypes(&self, phenotypes: &[Phenotype]) {
+        let mut stats = Stats::new(phenotypes.len());
+        todo!()
     }
 }
