@@ -11,7 +11,7 @@ impl Stats {
         let squares_sums: Vec<f64> = vec![0.0; n];
         Stats { sums, squares_sums }
     }
-    pub(crate) fn add(&mut self, values: Vec<f64>) -> Result<(), Error> {
+    pub(crate) fn add(&mut self, values: &[f64]) -> Result<(), Error> {
         if values.len() != self.sums.len() {
             return Err(Error::from(
                 format!("Need {} values, but got {}.", self.sums.len(), values.len())
@@ -23,11 +23,7 @@ impl Stats {
         }
         Ok(())
     }
-    pub(crate) fn means(&self) -> Vec<f64> {
-        let n = self.sums.len() as f64;
-        self.sums.iter().map(|sum| { sum / n }).collect()
-    }
-    pub(crate) fn sigmas(&self) -> Vec<f64> {
+    pub(crate) fn variances(&self) -> Vec<f64> {
         let n = (self.sums.len() - 1) as f64;
         self.squares_sums.iter().enumerate().map(|(i, square_sum)| {
             let sum = self.sums[i];

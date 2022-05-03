@@ -1,6 +1,6 @@
 use crate::phenotype::parse::treeize::{Call, Tree};
 use crate::error::Error;
-use crate::phenotype::pheno_sim::{PhenoSim, MyDistribution, Category};
+use crate::phenotype::pheno_sim::{PhenoSim, MyDistribution, Category, Binary};
 use crate::phenotype::parse::Value;
 
 pub(super) fn analyze(call: Call) -> Result<PhenoSim, Error> {
@@ -13,6 +13,17 @@ pub(super) fn analyze(call: Call) -> Result<PhenoSim, Error> {
     let mut args_iter = call.args.into_iter();
     let effect_distribution = distribution(args_iter.next().unwrap())?;
     let heritability = number(args_iter.next().unwrap())?;
+    if heritability <= 0.0 {
+        return Err(Error::from(
+            format!("Heritability needs to be greater than 0.0, but is {}.", heritability)
+        ))
+    }
+    if heritability > 1.0 {
+        return Err(Error::from(
+            format!("Heritability needs to be no greater than 1.0, but is {}.",
+                    heritability)
+        ))
+    }
     let category =
         args_iter.next().map(|tree| { category(tree) }).transpose()?
             .unwrap_or(Category::Quantitative);
@@ -108,7 +119,7 @@ fn bin(call: Call) -> Result<Category, Error> {
     let control =
         args_iter.next().map(|tree| { value(tree) }).transpose()?
             .map(|value| { format!("{}", value) }).unwrap_or_else(|| String::from("control"));
-    Ok(Category::Binary(prevalence, case, control))
+    Ok(Category::Binary(Binary::new(prevalence, case, control)?))
 }
 
 fn value(tree: Tree) -> Result<Value, Error> {

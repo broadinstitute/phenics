@@ -10,6 +10,9 @@ use crate::sim::sample_sim::SampleSim;
 use crate::sim::allele_sim::AlleleSim;
 use crate::phenotype::Phenotype;
 use crate::stats::Stats;
+use rand_distr::Normal;
+use rand::prelude::{Distribution, ThreadRng};
+use crate::render::sample_result::SampleResult;
 
 pub(crate) struct Sim {
     phenotype_names: Vec<String>,
@@ -19,7 +22,7 @@ pub(crate) struct Sim {
 
 impl Sim {
     pub(crate) fn new(sample_ids: Vec<String>, phenotypes: &[Phenotype]) -> Sim {
-        let phenotype_names: Vec<String> = phenotypes.iter().map(|phenotype|{
+        let phenotype_names: Vec<String> = phenotypes.iter().map(|phenotype| {
             String::from(&phenotype.name)
         }).collect();
         let sample_sims: Vec<SampleSim> =
@@ -48,12 +51,14 @@ impl Sim {
         Ok(())
     }
     pub(crate) fn try_add(&self, o_sim: &Sim) -> Result<Sim, Error> {
-        let Sim { phenotype_names: o_phenotype_names,
-            sample_sims: o_sample_sims, n_records: o_n_records } = o_sim;
+        let Sim {
+            phenotype_names: o_phenotype_names,
+            sample_sims: o_sample_sims, n_records: o_n_records
+        } = o_sim;
         if self.phenotype_names.len() != o_phenotype_names.len() {
             return Err(Error::from(
                 format!("Need to have the same phenotypes, but got {} phenotypes \
-                versus {} phenotypes.", self.phenotype_names.len(), o_phenotype_names.len())))
+                versus {} phenotypes.", self.phenotype_names.len(), o_phenotype_names.len())));
         }
         let mut phenotype_names: Vec<String> = Vec::new();
         for (i, phenotype_name) in self.phenotype_names.iter().enumerate() {
@@ -63,8 +68,7 @@ impl Sim {
             } else {
                 return Err(Error::from(
                     format!("Need to have the same phenotypes, but got '{}' versus '{}'.",
-                            phenotype_name, o_phenotype_name)))
-
+                            phenotype_name, o_phenotype_name)));
             }
         }
         let mut sample_sims: Vec<SampleSim> = Vec::new();
@@ -92,8 +96,43 @@ impl Sim {
     pub(crate) fn create_summary(&self) -> String {
         format!("{} samples, {} records.", self.n_samples(), self.n_records())
     }
-    pub(crate) fn render_phenotypes(&self, phenotypes: &[Phenotype]) {
-        let mut stats = Stats::new(phenotypes.len());
+    fn new_env_distributions(&self, phenotypes: &[Phenotype], stats: &Stats)
+                             -> Result<Vec<Normal<f64>>, Error> {
+        let mut distributions: Vec<Normal<f64>> = Vec::new();
+        let gen_variances = stats.variances();
+        for (i, phenotype) in phenotypes.iter().enumerate() {
+            let h2 = phenotype.sim.heritability;
+            let std_dev = (gen_variances[i] * (1.0 - h2) / h2).sqrt();
+            distributions.push(Normal::new(0f64, std_dev)?);
+        }
+        Ok(distributions)
+    }
+    fn new_liabilities(&self, env_distributions: &[Normal<f64>]) -> Vec<Vec<f64>> {
+        let mut liabilities: Vec<Vec<f64>> = Vec::new();
+        for sample_sim in &self.sample_sims {
+            let mut sample_liabilities: Vec<f64> = Vec::new();
+            for (i, gen_effect) in sample_sim.effects.iter().enumerate(){
+                let env_effect =
+                    env_distributions[i].sample::<ThreadRng>(&mut rand::thread_rng());
+                let liability = gen_effect + env_effect;
+                sample_liabilities.push(liability);
+            };
+            liabilities.push(sample_liabilities);
+        };
+        liabilities
+    }
+    fn new_sample_results(&self, liabilities: &[Vec<f64>]) -> Vec<SampleResult> {
         todo!()
+    }
+    pub(crate) fn render_phenotypes(&self, phenotypes: &[Phenotype])
+        -> Result<Vec<SampleResult>, Error> {
+        let mut stats = Stats::new(phenotypes.len());
+        for sample_sim in &self.sample_sims {
+            stats.add(&sample_sim.effects)?;
+        }
+        let env_distributions = self.new_env_distributions(phenotypes, &stats)?;
+        let liabilities = self.new_liabilities(&env_distributions);
+        let sample_results = self.new_sample_results(&liabilities);
+        Ok(sample_results)
     }
 }
