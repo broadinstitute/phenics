@@ -35,7 +35,7 @@ impl Sim {
         Sim { phenotype_names, sample_sims, n_records }
     }
     pub(crate) fn add_genotypes(&mut self, genotype_sims: &[Option<GenotypeSim>], locus: &Locus,
-                                allele_sims: &Vec<AlleleSim>)
+                                allele_sims: &[AlleleSim])
                                 -> Result<(), Error> {
         self.check_same_size_as_samples(genotype_sims, locus, "genotypes")?;
         for (i_sample, genotype_sim) in genotype_sims.iter().enumerate() {
@@ -43,8 +43,9 @@ impl Sim {
             match genotype_sim {
                 None => { sample_sim.add_unknown_genotype() }
                 Some(genotype_sim) => {
-                    for allele_sim in allele_sims {
-                        sample_sim.add_allele_effects(genotype_sim, allele_sim);
+                    for (i_allele, allele_sim) in allele_sims.iter().enumerate() {
+                        sample_sim.add_allele_effects(genotype_sim, allele_sim,
+                                                      i_allele);
                     }
                 }
             }
@@ -179,9 +180,11 @@ impl Sim {
                         }
                         if let Some((i_case_min, _)) = case_min {
                             if let Some((i_control_max, _)) = control_max {
-                                pheno_results[i_case_min] = PhenoResult::Control;
-                                pheno_results[i_control_max] = PhenoResult::Case;
-                                sorting_pheno_results = true;
+                                if i_case_min < i_control_max {
+                                    pheno_results[i_case_min] = PhenoResult::Control;
+                                    pheno_results[i_control_max] = PhenoResult::Case;
+                                    sorting_pheno_results = true;
+                                }
                             }
                         }
                     }

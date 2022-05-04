@@ -39,9 +39,11 @@ impl SampleSim {
     pub(crate) fn add_unknown_genotype(&mut self) {
         self.n_unknown_genotypes += 1;
     }
-    pub(crate) fn add_allele_effects(&mut self, genotype: &GenotypeSim, allele: &AlleleSim) {
-        for (i, dosage) in genotype.dosages.iter().enumerate() {
-            self.effects[i] += (*dosage as f64) * allele.effects[i];
+    pub(crate) fn add_allele_effects(&mut self, genotype: &GenotypeSim, allele: &AlleleSim,
+                                     i_allele: usize) {
+        let dosage = genotype.dosages[i_allele];
+        for (i, effect) in allele.effects.iter().enumerate() {
+            self.effects[i] += (dosage as f64) * effect;
         }
         self.n_unknown_alleles += genotype.n_unknown_alleles;
     }

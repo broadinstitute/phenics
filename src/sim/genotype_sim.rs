@@ -11,8 +11,10 @@ impl GenotypeSim {
         let mut n_unknown_alleles: u64 = 0;
         for allele in &*genotype {
             if let Some(pos) = allele.position() {
-                let i = pos - 1;
-                dosages[i] += 1;
+                if pos > 0 {
+                    let i = pos - 1;
+                    dosages[i] += 1;
+                }
             } else {
                 n_unknown_alleles += 1;
             }

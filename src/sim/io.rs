@@ -9,7 +9,7 @@ use crate::render::sample_result::SampleResult;
 use crate::phenotype::Phenotype;
 
 const N_RECORDS: &str = "n_records";
-const HEADER_PREFIX: &str = "#id\tn_no_gt\tn_no_alt";
+const HEADER_PREFIX: &str = "#id\tn_no_gt\tn_no_alt\t";
 
 pub(crate) fn write(sim: &Sim, file: &str) -> Result<(), Error> {
     let mut writer = BufWriter::new(File::create(file)?);

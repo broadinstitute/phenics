@@ -35,7 +35,7 @@ const VCF: &str = "vcf";
 const MERGE: &str = "merge";
 const RENDER: &str = "render";
 const INPUT: &str = "input";
-const OUTPUT: &str = "OUTPUT";
+const OUTPUT: &str = "output";
 const PHENOTYPE: &str = "phenotype";
 
 fn subcommand_problem(problem: &str) -> Result<Config, Error> {
