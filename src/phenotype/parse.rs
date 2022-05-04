@@ -47,6 +47,7 @@ fn parse_names(name_string: &str) -> Result<Vec<String>, Error> {
 fn parse_sim(definition: &str) -> Result<PhenoSim, Error> {
     let tokens = tokenize::tokenize(definition)?;
     let call = treeize::treeize(tokens)?;
+    println!("{}", call);
     let sim = analyze::analyze(call)?;
     Ok(sim)
 }

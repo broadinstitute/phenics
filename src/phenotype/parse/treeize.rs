@@ -1,6 +1,7 @@
 use crate::phenotype::parse::Value;
 use crate::error::Error;
 use crate::phenotype::parse::tokenize::Token;
+use std::fmt::{Display, Formatter};
 
 pub(super) enum Tree {
     Call(Call),
@@ -59,6 +60,7 @@ impl TreeizeState {
                         }
                     }
                     Token::CloseParen => {
+                        call.add_arg(Tree::Value(value));
                         TreeizeState::close_parens(stack, call)
                     }
                     Token::Comma => {
@@ -144,3 +146,27 @@ pub(super) fn treeize(tokens: Vec<Token>) -> Result<Call, Error> {
     state.end(call_stack, call)
 }
 
+impl Display for Tree {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Tree::Call(call) => {
+                write!(f, "{}", call)
+            }
+            Tree::Value(value) => {
+                match value {
+                    Value::String(string) => { write!(f, "{}", string)}
+                    Value::Number(number) => { write!(f, "{}", number)}
+                }
+            }
+        }
+    }
+}
+
+impl Display for Call {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let args = self.args.iter().map(|arg|{
+            format!("{}", arg)
+        }).collect::<Vec<String>>().join(",");
+        write!(f, "{}({})", self.name, args)
+    }
+}
