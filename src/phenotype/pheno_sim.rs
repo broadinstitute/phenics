@@ -8,7 +8,7 @@ use std::fmt::{Display, Formatter};
 pub(crate) struct PhenoSim {
     pub(crate) effect_distribution: MyDistribution,
     pub(crate) heritability: f64,
-    category: Category,
+    pub(crate) category: Category,
 }
 
 pub(crate) enum Category {
@@ -17,7 +17,7 @@ pub(crate) enum Category {
 }
 
 pub(crate) struct Binary {
-    prevalence: f64,
+    pub(crate) prevalence: f64,
     pub(crate) case: String,
     pub(crate) control: String,
 }
@@ -48,7 +48,7 @@ impl PhenoSim {
 
 impl Binary {
     pub(crate) fn new(prevalence: f64, case: String, control: String) -> Result<Binary, Error> {
-        if prevalence < 0.0 || prevalence > 1.0 {
+        if !(0.0..=1.0).contains(&prevalence) {
             Err(Error::from(
                 format!("Prevalence needs to be between 0.0 and 1.0, but is {}.", prevalence)
             ))

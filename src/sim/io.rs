@@ -5,6 +5,8 @@ use fs_err::File;
 use std::io::Write;
 use crate::sim::sample_sim::SampleSim;
 use crate::sim;
+use crate::render::sample_result::SampleResult;
+use crate::phenotype::Phenotype;
 
 const N_RECORDS: &str = "n_records";
 const HEADER_PREFIX: &str = "#id\tn_no_gt\tn_no_alt";
@@ -23,6 +25,29 @@ pub(crate) fn write(sim: &Sim, file: &str) -> Result<(), Error> {
                 .collect::<Vec<String>>().join("\t");
         writeln!(writer, "{}\t{}\t{}\t{}", sample.id, sample.n_unknown_genotypes,
                  sample.n_unknown_alleles, effects)?;
+    }
+    Ok(())
+}
+
+pub(crate) fn write_results(sim: &Sim, sample_results: &[SampleResult], phenotypes: &[Phenotype],
+                            file: &str)
+    -> Result<(), Error> {
+    let mut writer = BufWriter::new(File::create(file)?);
+    writeln!(writer, "##version={}", env!("CARGO_PKG_VERSION"))?;
+    writeln!(writer, "##{}={}", N_RECORDS, sim.n_records)?;
+    writeln!(writer, "##n_samples={}", sim.sample_sims.len())?;
+    writeln!(writer, "##n_phenotypes={}", sim.phenotype_names.len())?;
+    let phenotypes_names = sim.phenotype_names.join("\t");
+    writeln!(writer, "#id\t{}", phenotypes_names)?;
+    for sample_result in sample_results {
+        let mut pheno_strings: Vec<String> = Vec::new();
+        for (i_pheno, pheno_result)
+        in sample_result.pheno_results.iter().enumerate() {
+            let pheno_string =
+                pheno_result.to_string_for(&phenotypes[i_pheno].sim.category)?;
+            pheno_strings.push(pheno_string)
+        }
+        writeln!(writer, "{}\t{}", sample_result.name, pheno_strings.join("\t"))?;
     }
     Ok(())
 }

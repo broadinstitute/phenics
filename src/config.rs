@@ -14,7 +14,7 @@ pub(crate) struct CheckConfig {
 }
 
 pub(crate) struct VcfConfig {
-    pub(crate) inputs: Vec<String>,
+    pub(crate) inputs: Option<Vec<String>>,
     pub(crate) phenotype_file: String,
     pub(crate) output: String,
 }
@@ -139,10 +139,9 @@ pub(crate) fn get_config() -> Result<Config, Error> {
             Ok(Config::Check(CheckConfig { phenotype_file }))
         }
         Some((VCF, vcf_matches)) => {
-            let inputs =
-                error::none_to_error(vcf_matches.values_of(INPUT),
-                                     "Need to specify input files")?
-                    .map(String::from).collect();
+            let inputs = vcf_matches.values_of(INPUT).map(|values| {
+                values.map(|value| { String::from(value) }).collect()
+            });
             let phenotype_file =
                 String::from(
                     error::none_to_error(vcf_matches.value_of(PHENOTYPE),

@@ -13,6 +13,8 @@ use crate::stats::Stats;
 use rand_distr::Normal;
 use rand::prelude::{Distribution, ThreadRng};
 use crate::render::sample_result::SampleResult;
+use crate::render::pheno_result::PhenoResult;
+use crate::phenotype::pheno_sim::{Category, Binary};
 
 pub(crate) struct Sim {
     phenotype_names: Vec<String>,
@@ -111,7 +113,7 @@ impl Sim {
         let mut liabilities: Vec<Vec<f64>> = Vec::new();
         for sample_sim in &self.sample_sims {
             let mut sample_liabilities: Vec<f64> = Vec::new();
-            for (i, gen_effect) in sample_sim.effects.iter().enumerate(){
+            for (i, gen_effect) in sample_sim.effects.iter().enumerate() {
                 let env_effect =
                     env_distributions[i].sample::<ThreadRng>(&mut rand::thread_rng());
                 let liability = gen_effect + env_effect;
@@ -121,18 +123,86 @@ impl Sim {
         };
         liabilities
     }
-    fn new_sample_results(&self, liabilities: &[Vec<f64>]) -> Vec<SampleResult> {
-        todo!()
+    fn new_sample_results(&self, liabilities: &[Vec<f64>], phenotypes: &[Phenotype])
+                          -> Vec<SampleResult> {
+        let mut sample_results: Vec<SampleResult> =
+            self.sample_sims.iter().map(|sample_sim| {
+                SampleResult::new(sample_sim.id.clone(), Vec::<PhenoResult>::new())
+            }).collect();
+        for (i_pheno, phenotype) in phenotypes.iter().enumerate() {
+            match &phenotype.sim.category {
+                Category::Quantitative => {
+                    for (i_sample, sample_result) in
+                    sample_results.iter_mut().enumerate() {
+                        let liability = liabilities[i_sample][i_pheno];
+                        sample_result.pheno_results.push(PhenoResult::Quantitative(liability))
+                    }
+                }
+                Category::Binary(binary) => {
+                    let Binary { prevalence, .. } = binary;
+                    let n_cases = ((sample_results.len() as f64) * prevalence) as usize;
+                    let n_controls = sample_results.len() - n_cases;
+                    let mut pheno_results: Vec<PhenoResult> = Vec::new();
+                    for _ in 0..n_cases { pheno_results.push(PhenoResult::Case) }
+                    for _ in 0..n_controls { pheno_results.push(PhenoResult::Control) }
+                    let mut sorting_pheno_results = true;
+                    while sorting_pheno_results {
+                        sorting_pheno_results = false;
+                        let mut case_min: Option<(usize, f64)> = None;
+                        let mut control_max: Option<(usize, f64)> = None;
+                        for (i_sample, pheno_result)
+                        in pheno_results.iter().enumerate() {
+                            let liability = liabilities[i_sample][i_pheno];
+                            match pheno_result {
+                                PhenoResult::Quantitative(_) => {}
+                                PhenoResult::Case => {
+                                    match case_min {
+                                        None => { case_min = Some((i_sample, liability)) }
+                                        Some((_, min_liability)) => {
+                                            if liability < min_liability {
+                                                case_min = Some((i_sample, liability))
+                                            }
+                                        }
+                                    }
+                                }
+                                PhenoResult::Control => {
+                                    match control_max {
+                                        None => { control_max = Some((i_sample, liability)) }
+                                        Some((_, max_liability)) => {
+                                            if liability > max_liability {
+                                                control_max = Some((i_sample, liability))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if let Some((i_case_min, _)) = case_min {
+                            if let Some((i_control_max, _)) = control_max {
+                                pheno_results[i_case_min] = PhenoResult::Control;
+                                pheno_results[i_control_max] = PhenoResult::Case;
+                                sorting_pheno_results = true;
+                            }
+                        }
+                    }
+                    for (i_sample, pheno_result) in
+                    pheno_results.drain(..).enumerate() {
+                        sample_results[i_sample].pheno_results.push(pheno_result);
+                    }
+                }
+            }
+        }
+        sample_results
     }
     pub(crate) fn render_phenotypes(&self, phenotypes: &[Phenotype])
-        -> Result<Vec<SampleResult>, Error> {
+                                        -> Result<Vec<SampleResult>, Error> {
         let mut stats = Stats::new(phenotypes.len());
         for sample_sim in &self.sample_sims {
             stats.add(&sample_sim.effects)?;
         }
         let env_distributions = self.new_env_distributions(phenotypes, &stats)?;
         let liabilities = self.new_liabilities(&env_distributions);
-        let sample_results = self.new_sample_results(&liabilities);
+        let sample_results = self.new_sample_results(&liabilities, phenotypes);
         Ok(sample_results)
     }
 }
