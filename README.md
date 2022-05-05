@@ -1,7 +1,7 @@
 # phenics
 Phenics is a phenotype simulator for large datasets using additive model.
 
-#Features
+## Features
 
 * Process multiple VCF files in parallel, then merge liabilities before 
 calculating phenotypes.
@@ -10,14 +10,14 @@ calculating phenotypes.
 * Normally distributed environmental effect based on given heritability
 * Binary phenotype based on given prevalence and given values for case and control
 
-#Workflow
+## Workflow
 
 1. Write phenotype definitions, verify using `check`
 2. Run `vcf` for each VCF file, producing liabilities file
 3. Run `merge` to merge all liability files into single liability file
 4. Run `render` to create phenotypes based on liabilities
 
-#Limitations
+## Limitations
 
 All VCF files need to contain the same samples in the same order.
 This is what people normally have anyway.
@@ -25,7 +25,7 @@ This is what people normally have anyway.
 Since results are based on randomly chosen allelic effects, different
 runs produce different phenotypes.
 
-#Phenotype definitions
+## Phenotype definitions
 
 To create a phenotype called `foo` based on normally distributed allele effects
 and heritability of 0.3, write:
@@ -54,7 +54,7 @@ values yellow and blue, with a prevalence of 0.47 for yellow, write:
 color[10]=norm(0,1),0.3,bin(0.47,yellow,blue)
 ```
 
-#Usage
+## Usage
 
 ```
 phenics 0.1.0
@@ -76,7 +76,7 @@ SUBCOMMANDS:
     vcf
 ```
 
-##check
+### check
 
 ```
 USAGE:
@@ -87,7 +87,7 @@ OPTIONS:
     -p, --phenotype <FILE>    Phenotype definitions file
 ```
 
-##vcf
+### vcf
 
 ```
 USAGE:
@@ -100,7 +100,7 @@ OPTIONS:
     -p, --phenotype <FILE>    Phenotype definitions file
 ```
 
-##merge
+### merge
 
 ```
 USAGE:
@@ -112,7 +112,7 @@ OPTIONS:
     -o, --output <FILE>      Output file
 ```
 
-##render
+### render
 
 ```
 USAGE:
@@ -125,7 +125,7 @@ OPTIONS:
     -p, --phenotype <FILE>    Phenotype definitions file
 ```
 
-#Credits
+## Credits
 
 Written by Oliver Ruebenacker based on guidance by Jason Flannick and 
 Yunfeng Ruan.
