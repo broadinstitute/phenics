@@ -11,7 +11,7 @@ workflow phenics {
             input:
                 vcf_file = vcf_file,
                 phenotypes_file = phenotypes_file,
-                output_file_name = vcf_file + ".liabilities"
+                output_file_name = "liabilities"
         }
     }
     call merge {

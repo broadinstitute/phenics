@@ -6,10 +6,10 @@ pub(crate) struct GenotypeSim {
 }
 
 impl GenotypeSim {
-    pub(crate) fn new(genotype: Genotype, n_alt: usize) -> GenotypeSim {
+    pub(crate) fn new(genotype: &Genotype, n_alt: usize) -> GenotypeSim {
         let mut dosages: Vec<u8> = vec![0; n_alt];
         let mut n_unknown_alleles: u64 = 0;
-        for allele in &*genotype {
+        for allele in genotype.iter() {
             if let Some(pos) = allele.position() {
                 if pos > 0 {
                     let i = pos - 1;

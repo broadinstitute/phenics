@@ -34,24 +34,20 @@ impl Sim {
         let n_records = 0u64;
         Sim { phenotype_names, sample_sims, n_records }
     }
-    pub(crate) fn add_genotypes(&mut self, genotype_sims: &[Option<GenotypeSim>], locus: &Locus,
-                                allele_sims: &[AlleleSim])
-                                -> Result<(), Error> {
-        self.check_same_size_as_samples(genotype_sims, locus, "genotypes")?;
-        for (i_sample, genotype_sim) in genotype_sims.iter().enumerate() {
-            let sample_sim = self.sample_sims.get_mut(i_sample).unwrap();
-            match genotype_sim {
-                None => { sample_sim.add_unknown_genotype() }
-                Some(genotype_sim) => {
-                    for (i_allele, allele_sim) in allele_sims.iter().enumerate() {
-                        sample_sim.add_allele_effects(genotype_sim, allele_sim,
-                                                      i_allele);
-                    }
+    pub(crate) fn add_genotype_sim(&mut self, genotype_sim: &Option<GenotypeSim>, i_sample: usize,
+                        allele_sims: &[AlleleSim]) {
+        let sample_sim = &mut self.sample_sims[i_sample];
+        match genotype_sim {
+            None => { sample_sim.add_unknown_genotype() }
+            Some(genotype_sim) => {
+                for (i_allele, allele_sim) in allele_sims.iter().enumerate() {
+                    sample_sim.add_allele_effects(genotype_sim, allele_sim, i_allele);
                 }
             }
         }
+    }
+    pub(crate) fn count_record(&mut self) {
         self.n_records += 1;
-        Ok(())
     }
     pub(crate) fn try_add(&self, o_sim: &Sim) -> Result<Sim, Error> {
         let Sim {

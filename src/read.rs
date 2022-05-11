@@ -32,13 +32,13 @@ fn read_vcf_reader<R: BufRead>(reader: R, phenotypes: &[Phenotype]) -> Result<Si
                 .collect::<Vec<AlleleSim>>();
         let locus = Locus::new(record.chromosome(), &record.position());
         sim.check_same_size_as_samples(&genotypes, &locus, "genotypes")?;
-        let mut genotype_sims = Vec::<Option<GenotypeSim>>::new();
-        for genotype in genotypes {
-            let genotype_stats =
-                genotype.map(|genotype| { GenotypeSim::new(genotype, allele_sims.len()) });
-            genotype_sims.push(genotype_stats);
+        for (i_sample, genotype) in genotypes.iter().enumerate() {
+            let genotype_sim =
+                genotype.as_ref()
+                    .map(|genotype| { GenotypeSim::new(genotype, allele_sims.len()) });
+            sim.add_genotype_sim(&genotype_sim, i_sample, &allele_sims);
         }
-        sim.add_genotypes(&genotype_sims, &locus, &allele_sims)?;
+        sim.count_record();
     }
     Ok(sim)
 }
