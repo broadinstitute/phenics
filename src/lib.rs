@@ -12,6 +12,7 @@ mod check;
 mod merge;
 mod render;
 mod stats;
+mod download;
 
 pub fn run() -> Result<(), Error> {
     let config = get_config()?;
@@ -20,5 +21,6 @@ pub fn run() -> Result<(), Error> {
         Config::Vcf(vcf_config) => { vcf::process_vcf(&vcf_config) }
         Config::Merge(merge_config) => { merge::merge(&merge_config) }
         Config::Render(render_config) => { render::render(&render_config) }
+        Config::Download(download_config) => { download::download(&download_config) }
     }
 }

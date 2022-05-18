@@ -1,12 +1,15 @@
 use clap::{command, Arg, Command};
 use crate::error::Error;
 use crate::error;
+use std::str::FromStr;
+use std::num::ParseIntError;
 
 pub(crate) enum Config {
     Check(CheckConfig),
     Vcf(VcfConfig),
     Merge(MergeConfig),
     Render(RenderConfig),
+    Download(DownloadConfig),
 }
 
 pub(crate) struct CheckConfig {
@@ -30,13 +33,24 @@ pub(crate) struct RenderConfig {
     pub(crate) output: String,
 }
 
+pub(crate) struct DownloadConfig {
+    pub(crate) url: String,
+    pub(crate) from: Option<usize>,
+    pub(crate) to: Option<usize>,
+    pub(crate) output: String,
+}
+
 const CHECK: &str = "check";
 const VCF: &str = "vcf";
 const MERGE: &str = "merge";
 const RENDER: &str = "render";
+const DOWNLOAD: &str = "download";
 const INPUT: &str = "input";
 const OUTPUT: &str = "output";
 const PHENOTYPE: &str = "phenotype";
+const URL: &str = "url";
+const FROM: &str = "from";
+const TO: &str = "to";
 
 fn subcommand_problem(problem: &str) -> Result<Config, Error> {
     let message =
@@ -127,8 +141,38 @@ pub(crate) fn get_config() -> Result<Config, Error> {
                 .value_name("FILE")
                 .help("Output file")
             )
-    )
-        ;
+    ).subcommand(
+        Command::new(DOWNLOAD)
+            .arg_required_else_help(true)
+            .arg(Arg::new(URL)
+                .short('u')
+                .long(URL)
+                .takes_value(true)
+                .value_name("URL")
+                .help("URL to download")
+            )
+            .arg(Arg::new(FROM)
+                .short('f')
+                .long(FROM)
+                .takes_value(true)
+                .value_name("POS")
+                .help("Start position in the object to download.")
+            )
+            .arg(Arg::new(TO)
+                .short('t')
+                .long(TO)
+                .takes_value(true)
+                .value_name("POS")
+                .help("End position in the object to download.")
+            )
+            .arg(Arg::new(OUTPUT)
+                .short('o')
+                .long(OUTPUT)
+                .takes_value(true)
+                .value_name("FILE")
+                .help("Output file")
+            )
+    );
     let arg_matches = app.try_get_matches()?;
     match arg_matches.subcommand() {
         Some((CHECK, check_matches)) => {
@@ -175,6 +219,19 @@ pub(crate) fn get_config() -> Result<Config, Error> {
                                                   "Need to specify output file.")?);
             Ok(Config::Render(RenderConfig { inputs, phenotype_file, output }))
         }
+        Some((DOWNLOAD, download_matches)) => {
+            let url =
+                String::from(error::none_to_error(download_matches.value_of(INPUT),
+                                     "Need to specify input files")?);
+            let from =
+                parse_unpack::<usize, ParseIntError>(download_matches.value_of(FROM))?;
+            let to =
+                parse_unpack::<usize, ParseIntError>(download_matches.value_of(TO))?;
+            let output =
+                String::from(error::none_to_error(download_matches.value_of(OUTPUT),
+                                                  "Need to specify output file.")?);
+            Ok(Config::Download(DownloadConfig { url, from, to, output }))
+        }
         Some(match_with_sub) => {
             let subcommand_name = match_with_sub.0;
             subcommand_problem(&format!("Unknown subcommand {}.", subcommand_name))
@@ -182,5 +239,13 @@ pub(crate) fn get_config() -> Result<Config, Error> {
         None => {
             subcommand_problem("Missing subcommand")
         }
+    }
+}
+
+fn parse_unpack<T: FromStr, E: From<<T as FromStr>::Err>>(text: Option<&str>)
+    -> Result<Option<T>, E> {
+    match text {
+        None => { Ok(None) }
+        Some(text) => { Ok(Some(text.parse::<T>()?)) }
     }
 }
