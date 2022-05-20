@@ -54,8 +54,8 @@ const TO: &str = "to";
 
 fn subcommand_problem(problem: &str) -> Result<Config, Error> {
     let message =
-        format!("{}. Available are '{}', '{}', '{}' and '{}'.",
-                problem, CHECK, VCF, MERGE, RENDER);
+        format!("{}. Available are '{}', '{}', '{}', '{}' and '{}'.",
+                problem, CHECK, VCF, MERGE, RENDER, DOWNLOAD);
     Err(Error::from(message))
 }
 
@@ -221,7 +221,7 @@ pub(crate) fn get_config() -> Result<Config, Error> {
         }
         Some((DOWNLOAD, download_matches)) => {
             let url =
-                String::from(error::none_to_error(download_matches.value_of(INPUT),
+                String::from(error::none_to_error(download_matches.value_of(URL),
                                      "Need to specify input files")?);
             let from =
                 parse_unpack::<usize, ParseIntError>(download_matches.value_of(FROM))?;
