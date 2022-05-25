@@ -19,3 +19,5 @@ rand_distr = "0.4.3"
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.11", features = ["stream"] }
 futures-util = "0.3.21"
+futures-core = "0.3.21"
+bytes = "1.1.0"

@@ -16,6 +16,16 @@ pub enum Error {
     Normal(NormalError),
     ParseInt(ParseIntError),
     ParseFloat(ParseFloatError),
+    Reqwest(reqwest::Error),
+}
+
+impl Error {
+    pub(crate) fn to_io_error(self) -> io::Error {
+        match self {
+            Error::IO(io_error) => { io_error }
+            _ => { io::Error::new(io::ErrorKind::Other, format!("{}", self))}
+        }
+    }
 }
 
 pub(crate) fn none_to_error<T>(option: Option<T>, message: &str) -> Result<T, Error> {
@@ -68,6 +78,39 @@ impl From<ParseFloatError> for Error {
     fn from(parse_float_error: ParseFloatError) -> Self { Error::ParseFloat(parse_float_error) }
 }
 
+impl From<reqwest::Error> for Error {
+    fn from(reqwest_error: reqwest::Error) -> Self { Error::Reqwest(reqwest_error) }
+}
+
+impl Clone for Error {
+    fn clone(&self) -> Self {
+        match self {
+            Error::Phenics(phenics_error) => { Error::Phenics(phenics_error.clone()) }
+            Error::Clap(clap_error) => {
+                Error::from(format!("clap::Error: {}", clap_error))
+            }
+            Error::IO(io_error) => {
+                Error::from(format!("io::Error: {}", io_error))
+            }
+            Error::VcfHeaderParse(vcf_header) => {
+                Error::VcfHeaderParse(vcf_header.clone())
+            }
+            Error::Genotype(genotype_error) => {
+                Error::Genotype(genotype_error.clone())
+            }
+            Error::Weighted(weighted_error) => {
+                Error::Weighted(weighted_error.clone())
+            }
+            Error::Normal(normal_error) => { Error::Normal(normal_error.clone()) }
+            Error::ParseInt(parse_int) => { Error::ParseInt(parse_int.clone()) }
+            Error::ParseFloat(parse_float) => { Error::ParseFloat(parse_float.clone()) }
+            Error::Reqwest(reqwest_error) => {
+                Error::from(format!("reqwest::Error: {}", reqwest_error))
+            }
+        }
+    }
+}
+
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -79,9 +122,8 @@ impl Display for Error {
             Error::Weighted(weighted_error) => { writeln!(f, "{}", weighted_error) }
             Error::Normal(normal_error) => { writeln!(f, "{}", normal_error) }
             Error::ParseInt(parse_int_error) => { writeln!(f, "{}", parse_int_error) }
-            Error::ParseFloat(parse_float_error) => {
-                writeln!(f, "{}", parse_float_error)
-            }
+            Error::ParseFloat(parse_float) => { writeln!(f, "{}", parse_float) }
+            Error::Reqwest(reqwest_error) => { writeln!(f, "{}", reqwest_error) }
         }
     }
 }
