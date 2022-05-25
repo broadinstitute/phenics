@@ -19,15 +19,6 @@ pub enum Error {
     Reqwest(reqwest::Error),
 }
 
-impl Error {
-    pub(crate) fn to_io_error(self) -> io::Error {
-        match self {
-            Error::IO(io_error) => { io_error }
-            _ => { io::Error::new(io::ErrorKind::Other, format!("{}", self))}
-        }
-    }
-}
-
 pub(crate) fn none_to_error<T>(option: Option<T>, message: &str) -> Result<T, Error> {
     option.ok_or_else(|| { Error::from(message) })
 }
@@ -98,10 +89,8 @@ impl Clone for Error {
             Error::Genotype(genotype_error) => {
                 Error::Genotype(genotype_error.clone())
             }
-            Error::Weighted(weighted_error) => {
-                Error::Weighted(weighted_error.clone())
-            }
-            Error::Normal(normal_error) => { Error::Normal(normal_error.clone()) }
+            Error::Weighted(weighted_error) => { Error::Weighted(*weighted_error) }
+            Error::Normal(normal_error) => { Error::Normal(*normal_error) }
             Error::ParseInt(parse_int) => { Error::ParseInt(parse_int.clone()) }
             Error::ParseFloat(parse_float) => { Error::ParseFloat(parse_float.clone()) }
             Error::Reqwest(reqwest_error) => {

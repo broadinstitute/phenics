@@ -1,23 +1,21 @@
-use std::io::{Read, Seek, SeekFrom, ErrorKind};
+use std::io::{Read, Seek, SeekFrom};
 use tokio::runtime::Runtime;
 use crate::error::Error;
 use futures_util::StreamExt;
-use futures_core;
 use futures_core::Stream;
-use bytes::Bytes;
+use bytes::{Bytes, Buf};
+use std::pin::Pin;
 use std::io;
-use std::slice::Iter;
 
 pub(crate) struct GcsReader {
     url: String,
     runtime: Runtime,
-    intake: Intake
+    intake: Intake,
 }
 
 struct Intake {
-    bytes_stream: Box<dyn Stream<Item = reqwest::Result<Bytes>>>,
+    bytes_stream: Pin<Box<dyn Stream<Item=reqwest::Result<Bytes>>>>,
     bytes: Option<Bytes>,
-    i_byte: usize
 }
 
 impl GcsReader {
@@ -26,22 +24,21 @@ impl GcsReader {
         GcsReader::new(url)
     }
     pub(crate) fn new(url: String) -> Result<GcsReader, Error> {
-        let mut runtime = Runtime::new()?;
-        let intake = Intake::open(&url, &mut runtime)?;
+        let runtime = Runtime::new()?;
+        let intake = Intake::open(&url, &runtime)?;
         Ok(GcsReader { url, runtime, intake })
     }
 }
 
 impl Intake {
-    fn new(bytes_stream: Box<dyn Stream<Item = reqwest::Result<Bytes>>>, bytes: Option<Bytes>)
-        -> Intake {
-        let i_byte = 0usize;
-        Intake { bytes_stream, bytes, i_byte }
+    fn new(bytes_stream: Pin<Box<dyn Stream<Item=reqwest::Result<Bytes>>>>, bytes: Option<Bytes>)
+           -> Intake {
+        Intake { bytes_stream, bytes }
     }
-    fn open(url: &str, runtime: &Runtime) -> Result<Intake, Error>  {
+    fn open(url: &str, runtime: &Runtime) -> Result<Intake, Error> {
         runtime.block_on(async {
             let response = reqwest::get(&*url).await?;
-            let mut bytes_stream = Box::new(response.bytes_stream());
+            let mut bytes_stream = Box::pin(response.bytes_stream());
             let bytes = match bytes_stream.next().await {
                 None => None,
                 Some(result) => Some(result?)
@@ -53,11 +50,34 @@ impl Intake {
 
 impl Read for GcsReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        let GcsReader { runtime, url, intake } = self;
-        match &intake.bytes {
+        let GcsReader { runtime, intake, .. } = self;
+        let need_next_bytes =
+            if let Some(bytes) = &intake.bytes {
+                bytes.is_empty()
+            } else {
+                false
+            };
+        if need_next_bytes {
+            let bytes = runtime.block_on(async {
+                let bytes_stream = &mut intake.bytes_stream;
+                let bytes = match bytes_stream.next().await {
+                    None => None,
+                    Some(result) => {
+                        Some(result.map_err(|reqwest_error| {
+                            io::Error::new(io::ErrorKind::Other, reqwest_error)
+                        })?)
+                    }
+                };
+                Ok::<Option<Bytes>, io::Error>(bytes)
+            })?;
+            intake.bytes = bytes;
+        }
+        match &mut intake.bytes {
             None => { Ok(0usize) }
             Some(bytes) => {
-                bytes.len()
+                let n_bytes = std::cmp::min(buf.len(), bytes.len());
+                bytes.split_to(n_bytes).copy_to_slice(&mut buf[0..n_bytes]);
+                Ok(n_bytes)
             }
         }
     }
@@ -67,8 +87,4 @@ impl Seek for GcsReader {
     fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
         todo!()
     }
-}
-
-fn reqwest_to_io_error(request_error: reqwest::Error) -> std::io::Error {
-    std::io::Error::new(ErrorKind::Other, request_error)
 }
