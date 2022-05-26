@@ -3,6 +3,7 @@ use crate::error::Error;
 use crate::error;
 use std::str::FromStr;
 use std::num::ParseIntError;
+use crate::http::Range;
 
 pub(crate) enum Config {
     Check(CheckConfig),
@@ -35,8 +36,7 @@ pub(crate) struct RenderConfig {
 
 pub(crate) struct DownloadConfig {
     pub(crate) url: String,
-    pub(crate) from: Option<usize>,
-    pub(crate) to: Option<usize>,
+    pub(crate) range: Range,
     pub(crate) output: String,
 }
 
@@ -230,7 +230,8 @@ pub(crate) fn get_config() -> Result<Config, Error> {
             let output =
                 String::from(error::none_to_error(download_matches.value_of(OUTPUT),
                                                   "Need to specify output file.")?);
-            Ok(Config::Download(DownloadConfig { url, from, to, output }))
+            let range = Range::new(from, to);
+            Ok(Config::Download(DownloadConfig { url, range, output }))
         }
         Some(match_with_sub) => {
             let subcommand_name = match_with_sub.0;

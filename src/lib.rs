@@ -14,6 +14,7 @@ mod render;
 mod stats;
 mod download;
 mod gcs;
+mod http;
 
 pub fn run() -> Result<(), Error> {
     let config = get_config()?;

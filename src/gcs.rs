@@ -6,6 +6,8 @@ use futures_core::Stream;
 use bytes::{Bytes, Buf};
 use std::pin::Pin;
 use std::io;
+use reqwest::RequestBuilder;
+use crate::http::Range;
 
 pub(crate) struct GcsReader {
     url: String,
@@ -19,13 +21,13 @@ struct Intake {
 }
 
 impl GcsReader {
-    pub(crate) fn connect(url: &str) -> Result<GcsReader, Error> {
+    pub(crate) fn connect(url: &str, range: &Range) -> Result<GcsReader, Error> {
         let url = String::from(url);
-        GcsReader::new(url)
+        GcsReader::new(url, range)
     }
-    pub(crate) fn new(url: String) -> Result<GcsReader, Error> {
+    pub(crate) fn new(url: String, range: &Range) -> Result<GcsReader, Error> {
         let runtime = Runtime::new()?;
-        let intake = Intake::open(&url, &runtime)?;
+        let intake = Intake::open(&url, &runtime, range)?;
         Ok(GcsReader { url, runtime, intake })
     }
 }
@@ -35,9 +37,9 @@ impl Intake {
            -> Intake {
         Intake { bytes_stream, bytes }
     }
-    fn open(url: &str, runtime: &Runtime) -> Result<Intake, Error> {
+    fn open(url: &str, runtime: &Runtime, range: &Range) -> Result<Intake, Error> {
         runtime.block_on(async {
-            let response = reqwest::get(&*url).await?;
+            let response = Intake::build_request(url, range).send().await?;
             let mut bytes_stream = Box::pin(response.bytes_stream());
             let bytes = match bytes_stream.next().await {
                 None => None,
@@ -45,6 +47,9 @@ impl Intake {
             };
             Ok(Intake::new(bytes_stream, bytes))
         })
+    }
+    fn build_request(url: &str, range: &Range) -> RequestBuilder {
+        reqwest::Client::new().get(&*url).header("Range", range.as_header())
     }
 }
 
