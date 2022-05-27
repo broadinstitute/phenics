@@ -224,9 +224,9 @@ pub(crate) fn get_config() -> Result<Config, Error> {
                 String::from(error::none_to_error(download_matches.value_of(URL),
                                      "Need to specify input files")?);
             let from =
-                parse_unpack::<usize, ParseIntError>(download_matches.value_of(FROM))?;
+                parse_unpack::<u64, ParseIntError>(download_matches.value_of(FROM))?;
             let to =
-                parse_unpack::<usize, ParseIntError>(download_matches.value_of(TO))?;
+                parse_unpack::<u64, ParseIntError>(download_matches.value_of(TO))?;
             let output =
                 String::from(error::none_to_error(download_matches.value_of(OUTPUT),
                                                   "Need to specify output file.")?);

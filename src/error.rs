@@ -73,6 +73,27 @@ impl From<reqwest::Error> for Error {
     fn from(reqwest_error: reqwest::Error) -> Self { Error::Reqwest(reqwest_error) }
 }
 
+fn wrap_as_io_error<E>(error: E) -> io::Error {
+    io::
+}
+
+impl Error {
+    pub(crate) fn to_io_error(self) -> io::Error {
+        match self {
+            Error::Phenics(phenics_error) => { }
+            Error::Clap(_) => {}
+            Error::IO(_) => {}
+            Error::VcfHeaderParse(_) => {}
+            Error::Genotype(_) => {}
+            Error::Weighted(_) => {}
+            Error::Normal(_) => {}
+            Error::ParseInt(_) => {}
+            Error::ParseFloat(_) => {}
+            Error::Reqwest(_) => {}
+        }
+    }
+}
+
 impl Clone for Error {
     fn clone(&self) -> Self {
         match self {

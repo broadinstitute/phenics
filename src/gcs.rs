@@ -8,6 +8,7 @@ use std::pin::Pin;
 use std::io;
 use reqwest::RequestBuilder;
 use crate::http::Range;
+use crate::http;
 
 pub(crate) struct GcsReader {
     url: String,
@@ -18,6 +19,8 @@ pub(crate) struct GcsReader {
 struct Intake {
     bytes_stream: Pin<Box<dyn Stream<Item=reqwest::Result<Bytes>>>>,
     bytes: Option<Bytes>,
+    pos: u64,
+    size: Option<u64>
 }
 
 impl GcsReader {
@@ -33,9 +36,10 @@ impl GcsReader {
 }
 
 impl Intake {
-    fn new(bytes_stream: Pin<Box<dyn Stream<Item=reqwest::Result<Bytes>>>>, bytes: Option<Bytes>)
+    fn new(bytes_stream: Pin<Box<dyn Stream<Item=reqwest::Result<Bytes>>>>, bytes: Option<Bytes>,
+           pos: u64, size: Option<u64>)
            -> Intake {
-        Intake { bytes_stream, bytes }
+        Intake { bytes_stream, bytes, pos, size }
     }
     fn open(url: &str, runtime: &Runtime, range: &Range) -> Result<Intake, Error> {
         runtime.block_on(async {
@@ -45,7 +49,9 @@ impl Intake {
                 None => None,
                 Some(result) => Some(result?)
             };
-            Ok(Intake::new(bytes_stream, bytes))
+            let pos = range.from.unwrap_or(0);
+            let size = http::parse_size(&response)?;
+            Ok(Intake::new(bytes_stream, bytes, pos, size))
         })
     }
     fn build_request(url: &str, range: &Range) -> RequestBuilder {
@@ -82,6 +88,7 @@ impl Read for GcsReader {
             Some(bytes) => {
                 let n_bytes = std::cmp::min(buf.len(), bytes.len());
                 bytes.split_to(n_bytes).copy_to_slice(&mut buf[0..n_bytes]);
+                intake.pos += n_bytes as u64;
                 Ok(n_bytes)
             }
         }
@@ -90,6 +97,14 @@ impl Read for GcsReader {
 
 impl Seek for GcsReader {
     fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
+        match pos {
+            SeekFrom::Start(pos) => {
+                self.intake =
+                    Intake::open(&self.url, &self.runtime, &Range::new_from(pos))?;
+            }
+            SeekFrom::End(_) => {}
+            SeekFrom::Current(_) => {}
+        }
         todo!()
     }
 }
