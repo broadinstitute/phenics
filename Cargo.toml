@@ -21,3 +21,4 @@ reqwest = { version = "0.11", features = ["stream"] }
 futures-util = "0.3.21"
 futures-core = "0.3.21"
 bytes = "1.1.0"
+google-cloud-auth = "0.2.0"

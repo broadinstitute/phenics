@@ -15,6 +15,7 @@ mod stats;
 mod download;
 mod gcs;
 mod http;
+mod gc_auth;
 
 pub fn run() -> Result<(), Error> {
     let config = get_config()?;

@@ -20,6 +20,7 @@ pub enum ErrorKind {
     ParseFloat,
     Reqwest,
     ToStr,
+    GCAuth,
     Unknown,
 }
 
@@ -136,6 +137,12 @@ impl From<ToStrError> for Error {
     }
 }
 
+impl From<google_cloud_auth::error::Error> for Error {
+    fn from(gc_auth_error: google_cloud_auth::error::Error) -> Self {
+        Error::from_error(ErrorKind::GCAuth, &gc_auth_error)
+    }
+}
+
 impl ErrorKind {
     pub fn as_str(&self) -> &str {
         match self {
@@ -150,6 +157,7 @@ impl ErrorKind {
             ErrorKind::ParseFloat => { "ParseFloat" }
             ErrorKind::Reqwest => { "Reqwest" }
             ErrorKind::ToStr => { "ToStr"}
+            ErrorKind::GCAuth => { "GCAuth"}
             ErrorKind::Unknown => { "[unknown error type]"}
         }
     }
