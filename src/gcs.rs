@@ -20,7 +20,7 @@ struct Intake {
     bytes_stream: Pin<Box<dyn Stream<Item=reqwest::Result<Bytes>>>>,
     bytes: Option<Bytes>,
     pos: u64,
-    size: Option<u64>
+    size: Option<u64>,
 }
 
 impl GcsReader {
@@ -33,6 +33,12 @@ impl GcsReader {
         let intake = Intake::open(&url, &runtime, range)?;
         Ok(GcsReader { url, runtime, intake })
     }
+    fn seek_pos(&mut self, pos: u64) -> std::io::Result<()> {
+        self.intake =
+            Intake::open(&self.url, &self.runtime, &Range::new_from(pos))
+                .map_err(|error| { error.into_io_error() })?;
+        Ok(())
+    }
 }
 
 impl Intake {
@@ -44,13 +50,13 @@ impl Intake {
     fn open(url: &str, runtime: &Runtime, range: &Range) -> Result<Intake, Error> {
         runtime.block_on(async {
             let response = Intake::build_request(url, range).send().await?;
+            let size = http::parse_size(&response)?;
             let mut bytes_stream = Box::pin(response.bytes_stream());
             let bytes = match bytes_stream.next().await {
                 None => None,
                 Some(result) => Some(result?)
             };
             let pos = range.from.unwrap_or(0);
-            let size = http::parse_size(&response)?;
             Ok(Intake::new(bytes_stream, bytes, pos, size))
         })
     }
@@ -95,16 +101,29 @@ impl Read for GcsReader {
     }
 }
 
+fn add_u64_i64(x: u64, y: i64) -> u64 {
+    if y == 0 {
+        x
+    } else if x > 0 {
+        x + (y as u64)
+    } else {
+        x - ((-y) as u64)
+    }
+}
+
 impl Seek for GcsReader {
     fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
-        match pos {
-            SeekFrom::Start(pos) => {
-                self.intake =
-                    Intake::open(&self.url, &self.runtime, &Range::new_from(pos))?;
+        let pos = match pos {
+            SeekFrom::Start(pos) => { pos }
+            SeekFrom::End(pos_end) => {
+                let size = self.intake.size.ok_or_else(|| {
+                    Error::from("Cannot seek from end, because size is not known")
+                }).map_err(|error| { error.into_io_error() })?;
+                add_u64_i64(size , pos_end)
             }
-            SeekFrom::End(_) => {}
-            SeekFrom::Current(_) => {}
-        }
-        todo!()
+            SeekFrom::Current(pos_rel) => { add_u64_i64(self.intake.pos , pos_rel) }
+        };
+        self.seek_pos(pos)?;
+        Ok(pos)
     }
 }
