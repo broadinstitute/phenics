@@ -24,12 +24,17 @@ pub(crate) fn parse_size(response: &Response) -> Result<Option<u64>, Error> {
         Some(value) => {
             let value_str = value.to_str()?;
             let mut parts = value_str.split('/');
-            let size = parts.nth(1).ok_or_else(|| {
+            let size_str = parts.nth(1).ok_or_else(|| {
                 Error::from(
                     format!("Could not parse 'Content-Range header value '{}'.", value_str)
                 )
-            })?.parse::<u64>()?;
-            Ok(Some(size))
+            })?;
+            if size_str.trim() == "*" {
+                Ok(None)
+            } else {
+                let size = size_str.parse::<u64>()?;
+                Ok(Some(size))
+            }
         }
     }
 }
