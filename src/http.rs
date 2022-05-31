@@ -1,5 +1,6 @@
-use reqwest::Response;
+use reqwest::{Response, RequestBuilder};
 use crate::error::Error;
+use google_cloud_auth::token::Token;
 
 pub(crate) struct Range {
     pub(crate) from: Option<u64>,
@@ -37,4 +38,8 @@ pub(crate) fn parse_size(response: &Response) -> Result<Option<u64>, Error> {
             }
         }
     }
+}
+
+pub(crate) fn add_bearer_auth(request: RequestBuilder, token: &Token) -> RequestBuilder {
+    request.bearer_auth(&token.access_token)
 }

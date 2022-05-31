@@ -5,7 +5,7 @@ use crate::error::Error;
 
 const GCS_FULL_CONTROL_SCOPE: &str = "https://www.googleapis.com/auth/devstorage.full_control";
 
-struct GCAuth {
+pub(crate) struct GCAuth {
     token_source: Box<dyn TokenSource>
 }
 
