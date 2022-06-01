@@ -35,10 +35,9 @@ task process_vcf {
         }
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.7"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.8"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
-
     }
     command <<<
         set -e
@@ -57,7 +56,7 @@ task merge {
         String output_file_name
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.7"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.8"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
     }
