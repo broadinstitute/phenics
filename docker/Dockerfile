@@ -1,11 +1,11 @@
-FROM rust:1.60 AS builder
+FROM rust:1.61 AS builder
 
 WORKDIR build_phenics
 RUN mkdir git && \
     cd git && \
     git clone https://github.com/broadinstitute/phenics.git && \
     cd phenics && \
-    git checkout v0.2.0  && \
+    git checkout v0.2.1  && \
     cargo install --path . --root /usr/local && \
     cd ../..  && \
     rm -r git

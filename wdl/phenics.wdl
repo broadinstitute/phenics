@@ -28,8 +28,14 @@ task process_vcf {
         File phenotypes_file
         String output_file_name
     }
+    parameter_meta {
+        vcf_file: {
+            description: "a VCF file",
+            localization_optional: true
+        }
+    }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.0"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.1"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
 
@@ -37,7 +43,7 @@ task process_vcf {
     command <<<
         set -e
         echo "Now running phenics sample for ~{vcf_file}"
-        phenics sample -d ~{vcf_file} -p ~{phenotypes_file} -r 1000 -x 1000000 -o ~{output_file_name}
+        phenics sample -d ~{vcf_file} -p ~{phenotypes_file} -r 1000 -x 10000000 -o ~{output_file_name}
     >>>
     output {
         File output_file = output_file_name
@@ -51,7 +57,7 @@ task merge {
         String output_file_name
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.0"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.1"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
     }
