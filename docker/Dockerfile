@@ -9,7 +9,8 @@ RUN mkdir git && \
     cd git && \
     git clone https://github.com/broadinstitute/phenics.git && \
     cd phenics && \
-    git checkout v0.2.9  && \
+    export PATH=$PATH:$HOME/.cargo/bin && \
+    git checkout v0.2.10  && \
     cargo install --path . --root /usr/local && \
     cd ../..  && \
     rm -r git
