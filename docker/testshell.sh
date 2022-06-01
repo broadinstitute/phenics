@@ -1,1 +1,1 @@
-sudo docker run -it gcr.io/nitrogenase-docker/phenics:0.1.0 bash
+sudo docker run -it gcr.io/nitrogenase-docker/phenics:0.2.5 bash
