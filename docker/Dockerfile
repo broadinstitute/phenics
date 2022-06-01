@@ -11,7 +11,8 @@ RUN mkdir git && \
     cd git && \
     git clone https://github.com/broadinstitute/phenics.git && \
     cd phenics && \
-    git checkout v0.2.13  && \
+    git checkout v0.2.14  && \
+    export PATH=$PATH:$HOME/.cargo/bin && \
     cargo install --path . --root /usr/local && \
     cd ../..  && \
     rm -r git
