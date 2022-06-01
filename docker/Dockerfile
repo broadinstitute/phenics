@@ -5,7 +5,7 @@ RUN mkdir git && \
     cd git && \
     git clone https://github.com/broadinstitute/phenics.git && \
     cd phenics && \
-    git checkout v0.1.0  && \
+    git checkout v0.2.0  && \
     cargo install --path . --root /usr/local && \
     cd ../..  && \
     rm -r git
