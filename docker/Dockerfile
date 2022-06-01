@@ -1,11 +1,14 @@
-FROM rust:1.61 AS builder
+FROM ubuntu:22.04 AS builder
 
 WORKDIR build_phenics
+RUN apt-get -y update && \
+    apt-get -y upgrade && \
+    apt-get -y install cargo && \
 RUN mkdir git && \
     cd git && \
     git clone https://github.com/broadinstitute/phenics.git && \
     cd phenics && \
-    git checkout v0.2.6  && \
+    git checkout v0.2.7  && \
     cargo install --path . --root /usr/local && \
     cd ../..  && \
     rm -r git
