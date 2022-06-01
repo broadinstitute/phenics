@@ -5,7 +5,7 @@ RUN mkdir git && \
     cd git && \
     git clone https://github.com/broadinstitute/phenics.git && \
     cd phenics && \
-    git checkout v0.2.2  && \
+    git checkout v0.2.3  && \
     cargo install --path . --root /usr/local && \
     cd ../..  && \
     rm -r git
@@ -14,5 +14,6 @@ FROM ubuntu:22.04
 
 RUN apt-get -y update && \
     apt-get -y upgrade && \
+    apt-get -y install openssl && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/local/bin/phenics /usr/local/bin/phenics
