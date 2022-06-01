@@ -35,7 +35,7 @@ task process_vcf {
         }
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.5"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.6"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
 
@@ -43,7 +43,7 @@ task process_vcf {
     command <<<
         set -e
         echo "Now running phenics sample for ~{vcf_file}"
-        export LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
+        export LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64:$LD_LIBRARY_PATH
         phenics sample -d ~{vcf_file} -p ~{phenotypes_file} -r 1000 -x 10000000 -o ~{output_file_name}
     >>>
     output {
@@ -58,7 +58,7 @@ task merge {
         String output_file_name
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.5"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.6"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
     }
