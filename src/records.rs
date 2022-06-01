@@ -12,6 +12,7 @@ pub(crate) trait RecordProcessor {
 
 pub(crate) struct SimProcessor<'a> {
     phenotypes: &'a [Phenotype],
+    has_processed: bool,
     sim: &'a mut Sim,
 }
 
@@ -19,12 +20,16 @@ pub(crate) struct RecordPrinter {}
 
 impl SimProcessor<'_> {
     pub(crate) fn new<'a>(sim: &'a mut Sim, phenotypes: &'a [Phenotype]) -> SimProcessor<'a> {
-        SimProcessor { sim, phenotypes }
+        let has_processed = false;
+        SimProcessor { sim, phenotypes, has_processed }
     }
+    pub(crate) fn has_processed(&self) -> bool { self.has_processed }
+    pub(crate) fn reset_has_processed(&mut self) { self.has_processed = false; }
 }
 
 impl RecordProcessor for SimProcessor<'_> {
     fn process_record(&mut self, record: &Record) -> Result<(), Error> {
+        self.has_processed = true;
         let genotypes = record.genotypes().genotypes()?;
         let allele_sims =
             record.alternate_bases().iter().map(|_alts| {
