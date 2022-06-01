@@ -13,7 +13,7 @@ license = "BSD-3-Clause"
 [dependencies]
 fs-err = "2.7.0"
 clap = { version = "3.1.8", features = ["cargo"] }
-noodles = { version = "0.22.0", features = ["bgzf", "vcf"] }
+noodles = { version = "0.22.0", features = ["bgzf", "vcf", "tabix", "csi", "core"] }
 rand = "0.8.5"
 rand_distr = "0.4.3"
 tokio = { version = "1", features = ["full"] }

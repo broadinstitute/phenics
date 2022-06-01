@@ -4,7 +4,7 @@ use noodles::vcf;
 use noodles::vcf::record::genotypes::genotype::GenotypeError;
 use rand::distributions::WeightedError;
 use rand_distr::NormalError;
-use std::num::{ParseIntError, ParseFloatError};
+use std::num::{ParseIntError, ParseFloatError, TryFromIntError};
 use reqwest::header::ToStrError;
 
 #[derive(Debug, Clone)]
@@ -21,6 +21,7 @@ pub enum ErrorKind {
     Reqwest,
     ToStr,
     GCAuth,
+    TryFromInt,
     Unknown,
 }
 
@@ -143,6 +144,12 @@ impl From<google_cloud_auth::error::Error> for Error {
     }
 }
 
+impl From<std::num::TryFromIntError> for Error {
+    fn from(try_from_int_error: TryFromIntError) -> Self {
+        Error::from_error(ErrorKind::TryFromInt, &try_from_int_error)
+    }
+}
+
 impl ErrorKind {
     pub fn as_str(&self) -> &str {
         match self {
@@ -158,6 +165,7 @@ impl ErrorKind {
             ErrorKind::Reqwest => { "Reqwest" }
             ErrorKind::ToStr => { "ToStr"}
             ErrorKind::GCAuth => { "GCAuth"}
+            ErrorKind::TryFromInt => { "TryFromInt"}
             ErrorKind::Unknown => { "[unknown error type]"}
         }
     }

@@ -26,15 +26,25 @@ struct Intake {
 }
 
 impl GcsReader {
-    pub(crate) fn connect(url: &str, range: &Range) -> Result<GcsReader, Error> {
-        let url = String::from(url);
+    pub(crate)  fn get_url(url_raw: &str) -> String {
+        if let Some(path) = url_raw.strip_prefix("gs://") {
+            format!("https://storage.googleapis.com/{}", path)
+        } else {
+            String::from(url_raw)
+        }
+    }
+    pub(crate) fn connect(url: &str) -> Result<GcsReader, Error> {
+        let url = GcsReader::get_url(url);
+        let range = Range::new_from(0);
+        GcsReader::new(url, &range)
+    }
+    pub(crate) fn connect_range(url: &str, range: &Range) -> Result<GcsReader, Error> {
+        let url = GcsReader::get_url(url);
         GcsReader::new(url, range)
     }
     pub(crate) fn new(url: String, range: &Range) -> Result<GcsReader, Error> {
         let runtime = Runtime::new()?;
-        let gc_auth = runtime.block_on(async {
-            GCAuth::new().await
-        })?;
+        let gc_auth = runtime.block_on(async { GCAuth::new().await })?;
         let intake = Intake::open(&url, &runtime, range, &gc_auth)?;
         Ok(GcsReader { url, runtime, intake, gc_auth })
     }

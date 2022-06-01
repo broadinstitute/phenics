@@ -4,6 +4,8 @@ use crate::error;
 use std::str::FromStr;
 use std::num::ParseIntError;
 use crate::http::Range;
+use noodles::core::region::Region;
+use crate::region;
 
 pub(crate) enum Config {
     Check(CheckConfig),
@@ -11,6 +13,7 @@ pub(crate) enum Config {
     Merge(MergeConfig),
     Render(RenderConfig),
     Download(DownloadConfig),
+    GcsTabix(GcsTabixConfig),
 }
 
 pub(crate) struct CheckConfig {
@@ -40,22 +43,32 @@ pub(crate) struct DownloadConfig {
     pub(crate) output: String,
 }
 
+pub(crate) struct GcsTabixConfig {
+    pub(crate) data: String,
+    pub(crate) index: String,
+    pub(crate) region: Region,
+}
+
 const CHECK: &str = "check";
 const VCF: &str = "vcf";
 const MERGE: &str = "merge";
 const RENDER: &str = "render";
 const DOWNLOAD: &str = "download";
+const GCS_TABIX: &str = "gcs-tabix";
 const INPUT: &str = "input";
 const OUTPUT: &str = "output";
 const PHENOTYPE: &str = "phenotype";
 const URL: &str = "url";
 const FROM: &str = "from";
 const TO: &str = "to";
+const DATA: &str = "data";
+const INDEX: &str = "index";
+const RANGE: &str = "range";
 
 fn subcommand_problem(problem: &str) -> Result<Config, Error> {
     let message =
-        format!("{}. Available are '{}', '{}', '{}', '{}' and '{}'.",
-                problem, CHECK, VCF, MERGE, RENDER, DOWNLOAD);
+        format!("{}. Available are '{}', '{}', '{}', '{}', '{}' and '{}'.",
+                problem, CHECK, VCF, MERGE, RENDER, DOWNLOAD, GCS_TABIX);
     Err(Error::from(message))
 }
 
@@ -172,6 +185,30 @@ pub(crate) fn get_config() -> Result<Config, Error> {
                 .value_name("FILE")
                 .help("Output file")
             )
+    ).subcommand(
+        Command::new(GCS_TABIX)
+            .arg_required_else_help(true)
+            .arg(Arg::new(DATA)
+                .short('d')
+                .long(DATA)
+                .takes_value(true)
+                .value_name("URL")
+                .help("URL to data file")
+            )
+            .arg(Arg::new(INDEX)
+                .short('i')
+                .long(INDEX)
+                .takes_value(true)
+                .value_name("URL")
+                .help("URL to index")
+            )
+            .arg(Arg::new(RANGE)
+                .short('r')
+                .long(RANGE)
+                .takes_value(true)
+                .value_name("RANGE")
+                .help("Range of the form <chrom>:<from>-<to>.")
+            )
     );
     let arg_matches = app.try_get_matches()?;
     match arg_matches.subcommand() {
@@ -222,7 +259,7 @@ pub(crate) fn get_config() -> Result<Config, Error> {
         Some((DOWNLOAD, download_matches)) => {
             let url =
                 String::from(error::none_to_error(download_matches.value_of(URL),
-                                     "Need to specify input files")?);
+                                                  "Need to specify input files")?);
             let from =
                 parse_unpack::<u64, ParseIntError>(download_matches.value_of(FROM))?;
             let to =
@@ -232,6 +269,19 @@ pub(crate) fn get_config() -> Result<Config, Error> {
                                                   "Need to specify output file.")?);
             let range = Range::new(from, to);
             Ok(Config::Download(DownloadConfig { url, range, output }))
+        }
+        Some((GCS_TABIX, gcs_tabix_matches)) => {
+            let data =
+                String::from(error::none_to_error(gcs_tabix_matches.value_of(DATA),
+                                                  "Need to specify URL to data.")?);
+            let index =
+                gcs_tabix_matches.value_of(DATA)
+                    .map(String::from)
+                    .unwrap_or(format!("{}.tbi", data));
+            let region =
+                region::parse(error::none_to_error(gcs_tabix_matches.value_of(RANGE),
+                                                   "Need to specify range")?)?;
+            Ok(Config::GcsTabix(GcsTabixConfig { data, index, region }))
         }
         Some(match_with_sub) => {
             let subcommand_name = match_with_sub.0;
@@ -244,7 +294,7 @@ pub(crate) fn get_config() -> Result<Config, Error> {
 }
 
 fn parse_unpack<T: FromStr, E: From<<T as FromStr>::Err>>(text: Option<&str>)
-    -> Result<Option<T>, E> {
+                                                          -> Result<Option<T>, E> {
     match text {
         None => { Ok(None) }
         Some(text) => { Ok(Some(text.parse::<T>()?)) }
