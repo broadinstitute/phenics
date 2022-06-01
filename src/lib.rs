@@ -19,6 +19,8 @@ mod gc_auth;
 mod records;
 mod region;
 mod tabix;
+mod region_iter;
+mod sample;
 
 pub fn run() -> Result<(), Error> {
     let config = get_config()?;
@@ -28,6 +30,7 @@ pub fn run() -> Result<(), Error> {
         Config::Merge(merge_config) => { merge::merge(&merge_config) }
         Config::Render(render_config) => { render::render(&render_config) }
         Config::Download(download_config) => { download::download(&download_config) }
-        Config::GcsTabix(gcs_tabix_config) => { tabix::tabix(&gcs_tabix_config)}
+        Config::GcsTabix(gcs_tabix_config) => { tabix::tabix(&gcs_tabix_config) }
+        Config::GcsSample(gcs_sample_config) => { sample::sample(&gcs_sample_config) }
     }
 }

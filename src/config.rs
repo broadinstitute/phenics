@@ -14,6 +14,7 @@ pub(crate) enum Config {
     Render(RenderConfig),
     Download(DownloadConfig),
     GcsTabix(GcsTabixConfig),
+    GcsSample(GcsSampleConfig),
 }
 
 pub(crate) struct CheckConfig {
@@ -49,12 +50,22 @@ pub(crate) struct GcsTabixConfig {
     pub(crate) region: Region,
 }
 
+pub(crate) struct GcsSampleConfig {
+    pub(crate) data: String,
+    pub(crate) index: String,
+    pub(crate) phenotype_file: String,
+    pub(crate) region_size: usize,
+    pub(crate) step_size_max: usize,
+    pub(crate) output: String,
+}
+
 const CHECK: &str = "check";
 const VCF: &str = "vcf";
 const MERGE: &str = "merge";
 const RENDER: &str = "render";
 const DOWNLOAD: &str = "download";
 const GCS_TABIX: &str = "gcs-tabix";
+const GCS_SAMPLE: &str = "gcs-sample";
 const INPUT: &str = "input";
 const OUTPUT: &str = "output";
 const PHENOTYPE: &str = "phenotype";
@@ -64,11 +75,13 @@ const TO: &str = "to";
 const DATA: &str = "data";
 const INDEX: &str = "index";
 const RANGE: &str = "range";
+const REGION_SIZE: &str = "region-size";
+const STEP_SIZE_MAX: &str = "step-size-max";
 
 fn subcommand_problem(problem: &str) -> Result<Config, Error> {
     let message =
-        format!("{}. Available are '{}', '{}', '{}', '{}', '{}' and '{}'.",
-                problem, CHECK, VCF, MERGE, RENDER, DOWNLOAD, GCS_TABIX);
+        format!("{}. Available are '{}', '{}', '{}', '{}', '{}', '{}' and '{}'.",
+                problem, CHECK, VCF, MERGE, RENDER, DOWNLOAD, GCS_TABIX, GCS_SAMPLE);
     Err(Error::from(message))
 }
 
@@ -209,6 +222,51 @@ pub(crate) fn get_config() -> Result<Config, Error> {
                 .value_name("RANGE")
                 .help("Range of the form <chrom>:<from>-<to>.")
             )
+    ).subcommand(
+        Command::new(GCS_SAMPLE)
+            .arg_required_else_help(true)
+            .arg(Arg::new(DATA)
+                .short('d')
+                .long(DATA)
+                .takes_value(true)
+                .value_name("URL")
+                .help("URL to data file")
+            )
+            .arg(Arg::new(INDEX)
+                .short('i')
+                .long(INDEX)
+                .takes_value(true)
+                .value_name("URL")
+                .help("URL to index")
+            )
+            .arg(Arg::new(PHENOTYPE)
+                .short('p')
+                .long(PHENOTYPE)
+                .takes_value(true)
+                .value_name("FILE")
+                .help("Phenotype definitions file")
+            )
+            .arg(Arg::new(REGION_SIZE)
+                .short('r')
+                .long(REGION_SIZE)
+                .takes_value(true)
+                .value_name("REGION_SIZE")
+                .help("Size of regions to sample.")
+            )
+            .arg(Arg::new(STEP_SIZE_MAX)
+                .short('x')
+                .long(STEP_SIZE_MAX)
+                .takes_value(true)
+                .value_name("STEP_SIZE_MAX")
+                .help("Maximum step size while sampling regions.")
+            )
+            .arg(Arg::new(OUTPUT)
+                .short('o')
+                .long(OUTPUT)
+                .takes_value(true)
+                .value_name("FILE")
+                .help("Output file")
+            )
     );
     let arg_matches = app.try_get_matches()?;
     match arg_matches.subcommand() {
@@ -282,6 +340,32 @@ pub(crate) fn get_config() -> Result<Config, Error> {
                 region::parse(error::none_to_error(gcs_tabix_matches.value_of(RANGE),
                                                    "Need to specify range")?)?;
             Ok(Config::GcsTabix(GcsTabixConfig { data, index, region }))
+        }
+        Some((GCS_SAMPLE, gcs_sample_matches)) => {
+            let data =
+                String::from(error::none_to_error(gcs_sample_matches.value_of(DATA),
+                                                  "Need to specify URL to data.")?);
+            let index =
+                gcs_sample_matches.value_of(DATA)
+                    .map(String::from)
+                    .unwrap_or(format!("{}.tbi", data));
+            let phenotype_file =
+                String::from(
+                    error::none_to_error(gcs_sample_matches.value_of(PHENOTYPE),
+                                         "Need to specify phenotype definitions")?);
+            let region_size =
+                error::none_to_error(gcs_sample_matches.value_of(REGION_SIZE),
+                                     "Need to specify region size")?.parse::<usize>()?;
+            let step_size_max =
+                error::none_to_error(gcs_sample_matches.value_of(STEP_SIZE_MAX),
+                                     "Need to specify maximum step size size")?
+                    .parse::<usize>()?;
+            let output =
+                String::from(error::none_to_error(gcs_sample_matches.value_of(OUTPUT),
+                                                  "Need to specify output file.")?);
+            Ok(Config::GcsSample(
+                GcsSampleConfig { data, index, phenotype_file, region_size, step_size_max, output }
+            ))
         }
         Some(match_with_sub) => {
             let subcommand_name = match_with_sub.0;

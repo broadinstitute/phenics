@@ -8,6 +8,8 @@ use crate::phenotype::Phenotype;
 
 pub(crate) trait RecordProcessor {
     fn process_record(&mut self, record: &Record) -> Result<(), Error>;
+    fn has_processed(&self) -> bool;
+    fn reset_has_processed(&mut self);
 }
 
 pub(crate) struct SimProcessor<'a> {
@@ -16,15 +18,22 @@ pub(crate) struct SimProcessor<'a> {
     sim: &'a mut Sim,
 }
 
-pub(crate) struct RecordPrinter {}
+pub(crate) struct RecordPrinter {
+    has_processed: bool,
+}
 
 impl SimProcessor<'_> {
     pub(crate) fn new<'a>(sim: &'a mut Sim, phenotypes: &'a [Phenotype]) -> SimProcessor<'a> {
         let has_processed = false;
         SimProcessor { sim, phenotypes, has_processed }
     }
-    pub(crate) fn has_processed(&self) -> bool { self.has_processed }
-    pub(crate) fn reset_has_processed(&mut self) { self.has_processed = false; }
+}
+
+impl RecordPrinter {
+    pub(crate) fn new() -> RecordPrinter {
+        let has_processed = false;
+        RecordPrinter { has_processed }
+    }
 }
 
 impl RecordProcessor for SimProcessor<'_> {
@@ -47,6 +56,8 @@ impl RecordProcessor for SimProcessor<'_> {
         self.sim.count_record();
         Ok(())
     }
+    fn has_processed(&self) -> bool { self.has_processed }
+    fn reset_has_processed(&mut self) { self.has_processed = false; }
 }
 
 impl RecordProcessor for RecordPrinter {
@@ -54,4 +65,6 @@ impl RecordProcessor for RecordPrinter {
         println!("{}", record);
         Ok(())
     }
+    fn has_processed(&self) -> bool { self.has_processed }
+    fn reset_has_processed(&mut self) { self.has_processed = false; }
 }

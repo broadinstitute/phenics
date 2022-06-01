@@ -6,35 +6,47 @@ use noodles::tabix::{Index, Reader};
 use crate::gcs::GcsReader;
 use noodles::csi::binning_index::BinningIndex;
 use crate::http::Range;
-use crate::phenotype::Phenotype;
-use crate::records::{RecordPrinter, RecordProcessor, SimProcessor};
-use crate::sim::Sim;
+use crate::records::{RecordPrinter, RecordProcessor};
+use crate::region_iter::RegionIterGen;
 
 pub(crate) fn tabix(config: &GcsTabixConfig) -> Result<(), Error> {
-    let record_processor = Box::new(RecordPrinter{});
-    process_region(&config.data, &config.index, &config.region, record_processor)
-}
-
-pub(crate) fn process_region(data_url: &str, index_url: &str, region: &core::Region,
-                             record_processor: Box<dyn RecordProcessor>)
-                             -> Result<(), Error> {
-    let index = read_index(index_url)?;
-    let vcf_header = read_vcf_header(data_url)?;
-    if let Some((i_chrom, _)) = index.reference_sequence_names().get_full(region.name()) {
-        read_region(&vcf_header, &index, data_url, i_chrom, region, record_processor)?;
-    }
+    let mut record_processor = RecordPrinter::new();
+    process_region(&config.data, &config.index, &config.region,
+                   &mut record_processor)?;
     Ok(())
 }
 
-pub(crate) fn sample_regions(data_url: &str, index_url: &str, sim: &mut Sim,
-                             phenotypes: &[Phenotype]) -> Result<(), Error> {
+pub(crate) fn process_region<P: RecordProcessor>(data_url: &str, index_url: &str,
+                                                 region: &core::Region, record_processor: &mut P)
+                                                 -> Result<usize, Error> {
     let index = read_index(index_url)?;
     let vcf_header = read_vcf_header(data_url)?;
-    let record_processor = SimProcessor::new(sim, phenotypes);
-    for i_chrom in 0..index.reference_sequence_names().len() {
-        todo!()
+    let n_records =
+        if let Some((i_chrom, _)) = index.reference_sequence_names().get_full(region.name()) {
+            read_region(&vcf_header, &index, data_url, i_chrom, region, record_processor)?
+        } else {
+            0
+        };
+    Ok(n_records)
+}
+
+pub(crate) fn sample_regions<P: RecordProcessor>(data_url: &str, index_url: &str,
+                                                 vcf_header: &vcf::Header, record_processor: &mut P,
+                                                 region_iter_gen: &RegionIterGen)
+                                                 -> Result<usize, Error> {
+    let index = read_index(index_url)?;
+    let mut n_records: usize = 0;
+    for (i_chrom, chrom) in index.reference_sequence_names().iter().enumerate() {
+        let region_iter = region_iter_gen.new_region_iter(chrom.clone());
+        for region in region_iter {
+            println!("Now reading region {}.", region);
+            let n_records_new =
+                read_region(vcf_header, &index, data_url, i_chrom, &region, record_processor)?;
+            println!("Read {} records from region {}.", n_records_new, region);
+            n_records += n_records_new;
+        }
     }
-    Ok(())
+    Ok(n_records)
 }
 
 fn read_index(index_url: &str) -> Result<Index, Error> {
@@ -43,17 +55,18 @@ fn read_index(index_url: &str) -> Result<Index, Error> {
     Ok(index)
 }
 
-fn read_vcf_header(data_url: &str) -> Result<vcf::Header, Error> {
+pub(crate) fn read_vcf_header(data_url: &str) -> Result<vcf::Header, Error> {
     let mut data_reader =
         vcf::Reader::new(bgzf::Reader::new(GcsReader::connect(data_url)?));
     let vcf_header = data_reader.read_header()?.parse::<vcf::Header>()?;
     Ok(vcf_header)
 }
 
-fn read_region(vcf_header: &vcf::Header, index: &Index, data_url: &str, i_chrom: usize,
-               region: &core::Region, mut record_processor: Box<dyn RecordProcessor>)
-    -> Result<(), Error> {
+fn read_region<P: RecordProcessor>(vcf_header: &vcf::Header, index: &Index, data_url: &str,
+                                   i_chrom: usize, region: &core::Region, record_processor: &mut P)
+                                   -> Result<usize, Error> {
     let chunks = index.query(i_chrom, region.interval())?;
+    let mut n_records: usize = 0;
     for chunk in chunks {
         let range =
             Range::new(Some(chunk.start().compressed()), Some(chunk.end().compressed()));
@@ -67,10 +80,11 @@ fn read_region(vcf_header: &vcf::Header, index: &Index, data_url: &str, i_chrom:
                 usize::try_from(i32::from(record.position()))
                     .and_then(core::Position::try_from)?;
             if region.interval().contains(&record_position) {
+                n_records += 1;
                 record_processor.process_record(&record)?;
             }
         }
     }
-    Ok(())
+    Ok(n_records)
 }
 
