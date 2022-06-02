@@ -71,7 +71,7 @@ impl Intake {
                     .send().await?;
             let status_code = response.status();
             if !status_code.is_success() {
-                return Err(Error::from(status_code.to_string()))
+                return Err(Error::from(format!("{} ({})", status_code, url)));
             }
             let size = http::parse_size(&response)?;
             let mut bytes_stream = Box::pin(response.bytes_stream());
