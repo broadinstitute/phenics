@@ -28,7 +28,7 @@ struct Intake {
 impl GcsReader {
     pub(crate)  fn get_url(url_raw: &str) -> String {
         if let Some(path) = url_raw.strip_prefix("gs://") {
-            format!("https://storage.googleapis.com/{}", path)
+            format!("https://storage.cloud.google.com/{}", path)
         } else {
             String::from(url_raw)
         }
