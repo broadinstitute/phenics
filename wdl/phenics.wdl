@@ -35,14 +35,14 @@ task process_vcf {
         }
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.16"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.17"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
     }
     command <<<
         set -e
         echo "Now running phenics sample for ~{vcf_file}"
-        phenics sample -d ~{vcf_file} -p ~{phenotypes_file} -r 1000 -x 10000000 -o ~{output_file_name}
+        phenics gcs-sample -d ~{vcf_file} -p ~{phenotypes_file} -r 1000 -x 10000000 -o ~{output_file_name}
     >>>
     output {
         File output_file = output_file_name
@@ -56,7 +56,7 @@ task merge {
         String output_file_name
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.16"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.17"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
     }
