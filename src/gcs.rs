@@ -69,6 +69,10 @@ impl Intake {
             let response =
                 http::add_bearer_auth(Intake::build_request(url, range), &token)
                     .send().await?;
+            let status_code = response.status();
+            if !status_code.is_success() {
+                return Err(Error::from(status_code.to_string()))
+            }
             let size = http::parse_size(&response)?;
             let mut bytes_stream = Box::pin(response.bytes_stream());
             let bytes = match bytes_stream.next().await {

@@ -56,7 +56,7 @@ task merge {
         String output_file_name
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.17"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.18"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
     }
