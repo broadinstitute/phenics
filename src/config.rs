@@ -346,7 +346,7 @@ pub(crate) fn get_config() -> Result<Config, Error> {
                 String::from(error::none_to_error(gcs_sample_matches.value_of(DATA),
                                                   "Need to specify URL to data.")?);
             let index =
-                gcs_sample_matches.value_of(DATA)
+                gcs_sample_matches.value_of(INDEX)
                     .map(String::from)
                     .unwrap_or(format!("{}.tbi", data));
             let phenotype_file =
