@@ -71,6 +71,10 @@ impl Intake {
                     .send().await?;
             let status_code = response.status();
             if !status_code.is_success() {
+                match response.text().await {
+                    Ok(text) => { println!("===\n{}\n===", text)}
+                    Err(error) => { println!("===\n{}\n===", error)}
+                }
                 return Err(Error::from(format!("{} ({})", status_code, url)));
             }
             let size = http::parse_size(&response)?;
