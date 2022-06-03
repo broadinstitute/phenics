@@ -94,6 +94,7 @@ impl Intake {
 
 impl Read for GcsReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        println!("read()");
         let GcsReader { runtime, intake, .. } = self;
         let need_next_bytes =
             if let Some(bytes) = &intake.bytes {
@@ -117,11 +118,12 @@ impl Read for GcsReader {
             intake.bytes = bytes;
         }
         match &mut intake.bytes {
-            None => { Ok(0usize) }
+            None => { println!("No more bytes"); Ok(0usize) }
             Some(bytes) => {
                 let n_bytes = std::cmp::min(buf.len(), bytes.len());
                 bytes.split_to(n_bytes).copy_to_slice(&mut buf[0..n_bytes]);
                 intake.pos += n_bytes as u64;
+                println!("{} bytes", n_bytes);
                 Ok(n_bytes)
             }
         }
@@ -140,6 +142,7 @@ fn add_u64_i64(x: u64, y: i64) -> u64 {
 
 impl Seek for GcsReader {
     fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
+        println!("Seek {:?}", pos);
         let pos = match pos {
             SeekFrom::Start(pos) => { pos }
             SeekFrom::End(pos_end) => {
@@ -151,6 +154,7 @@ impl Seek for GcsReader {
             SeekFrom::Current(pos_rel) => { add_u64_i64(self.intake.pos, pos_rel) }
         };
         self.seek_pos(pos)?;
+        println!("Done seeking.");
         Ok(pos)
     }
 }
