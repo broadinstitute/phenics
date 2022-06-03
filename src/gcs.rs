@@ -89,7 +89,12 @@ impl Intake {
         })
     }
     fn build_request(url: &str, range: &Range) -> RequestBuilder {
-        reqwest::Client::new().get(&*url).header("Range", range.as_header())
+        let builder_base = reqwest::Client::new().get(&*url);
+        if range.is_not_everything() {
+            builder_base.header("Range", range.as_header())
+        } else {
+            builder_base
+        }
     }
 }
 
