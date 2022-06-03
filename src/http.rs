@@ -12,7 +12,13 @@ impl Range {
         Range { from, to }
     }
     pub(crate) fn new_from(from: u64) -> Range { Range::new(Some(from), None) }
-    pub(crate) fn is_not_everything(&self) -> bool { self.from.is_some() || self.to.is_some() }
+    pub(crate) fn is_everything(&self) -> bool {
+        match self {
+            Range { from: None, to: None } => { true }
+            Range { from: Some(0), to: None } => { true }
+            _ => { false }
+        }
+    }
     pub(crate) fn as_header(&self) -> String {
         let from = self.from.unwrap_or(0);
         let to = self.to.map(|to| { to.to_string() }).unwrap_or_else(|| "".to_string());
