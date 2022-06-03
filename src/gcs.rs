@@ -66,9 +66,10 @@ impl Intake {
             -> Result<Intake, Error> {
         runtime.block_on(async {
             let token = gc_auth.get_token().await?;
-            let response =
-                http::add_bearer_auth(Intake::build_request(url, range), &token)
-                    .send().await?;
+            let request =
+                http::add_bearer_auth(Intake::build_request(url, range), &token);
+            println!("===\n{:?}\n===", request);
+            let response = request.send().await?;
             let status_code = response.status();
             if !status_code.is_success() {
                 match response.text().await {
