@@ -127,6 +127,8 @@ impl Read for GcsReader {
             None => { println!("No more bytes"); Ok(0usize) }
             Some(bytes) => {
                 let n_bytes = std::cmp::min(buf.len(), bytes.len());
+                println!("buf.len()={}, bytes.len()={}, n_bytes={}", buf.len(), bytes.len(),
+                         n_bytes);
                 bytes.split_to(n_bytes).copy_to_slice(&mut buf[0..n_bytes]);
                 intake.pos += n_bytes as u64;
                 println!("{} bytes", n_bytes);
