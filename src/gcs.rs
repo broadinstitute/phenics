@@ -109,6 +109,7 @@ impl Read for GcsReader {
                 false
             };
         if need_next_bytes {
+            println!("Need more bytes!");
             let bytes = runtime.block_on(async {
                 let bytes_stream = &mut intake.bytes_stream;
                 let bytes = match bytes_stream.next().await {
