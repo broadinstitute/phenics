@@ -104,10 +104,10 @@ impl Read for GcsReader {
         let GcsReader { runtime, intake, .. } = self;
         let need_next_bytes =
             if let Some(bytes) = &intake.bytes {
-                println!("bytes is some empty");
+                println!("Bytes is some. Empty? {}", bytes.is_empty());
                 bytes.is_empty()
             } else {
-                println!("bytes is none");
+                println!("Bytes is none");
                 false
             };
         if need_next_bytes {
@@ -138,7 +138,7 @@ impl Read for GcsReader {
                              n_bytes);
                     bytes.split_to(n_bytes).copy_to_slice(&mut buf[0..n_bytes]);
                     intake.pos += n_bytes as u64;
-                    println!("{} bytes", n_bytes);
+                    println!("read {} bytes; remaining {} bytes", n_bytes, bytes.len());
                     Ok(n_bytes)
                 }
             }
