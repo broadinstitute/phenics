@@ -104,8 +104,10 @@ impl Read for GcsReader {
         let GcsReader { runtime, intake, .. } = self;
         let need_next_bytes =
             if let Some(bytes) = &intake.bytes {
+                println!("bytes is some empty");
                 bytes.is_empty()
             } else {
+                println!("bytes is none");
                 false
             };
         if need_next_bytes {
