@@ -68,7 +68,6 @@ impl Intake {
             let token = gc_auth.get_token().await?;
             let request =
                 http::add_bearer_auth(Intake::build_request(url, range), &token);
-            println!("===\n{:?}\n===", request);
             let response = request.send().await?;
             let status_code = response.status();
             if !status_code.is_success() {
@@ -100,18 +99,14 @@ impl Intake {
 
 impl Read for GcsReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        println!("read()");
         let GcsReader { runtime, intake, .. } = self;
         let need_next_bytes =
             if let Some(bytes) = &intake.bytes {
-                println!("Bytes is some. Empty? {}", bytes.is_empty());
                 bytes.is_empty()
             } else {
-                println!("Bytes is none");
                 false
             };
         if need_next_bytes {
-            println!("Need more bytes!");
             let bytes = runtime.block_on(async {
                 let bytes_stream = &mut intake.bytes_stream;
                 let bytes = match bytes_stream.next().await {
@@ -127,18 +122,14 @@ impl Read for GcsReader {
             intake.bytes = bytes;
         }
         match &mut intake.bytes {
-            None => { println!("No more bytes"); Ok(0usize) }
+            None => { Ok(0usize) }
             Some(bytes) => {
                 if bytes.is_empty() {
-                    println!("Last bytes are exhausted.");
                     Ok(0)
                 } else {
                     let n_bytes = std::cmp::min(buf.len(), bytes.len());
-                    println!("buf.len()={}, bytes.len()={}, n_bytes={}", buf.len(), bytes.len(),
-                             n_bytes);
                     bytes.split_to(n_bytes).copy_to_slice(&mut buf[0..n_bytes]);
                     intake.pos += n_bytes as u64;
-                    println!("read {} bytes; remaining {} bytes", n_bytes, bytes.len());
                     Ok(n_bytes)
                 }
             }
@@ -158,7 +149,6 @@ fn add_u64_i64(x: u64, y: i64) -> u64 {
 
 impl Seek for GcsReader {
     fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
-        println!("Seek {:?}", pos);
         let pos = match pos {
             SeekFrom::Start(pos) => { pos }
             SeekFrom::End(pos_end) => {
@@ -170,7 +160,6 @@ impl Seek for GcsReader {
             SeekFrom::Current(pos_rel) => { add_u64_i64(self.intake.pos, pos_rel) }
         };
         self.seek_pos(pos)?;
-        println!("Done seeking.");
         Ok(pos)
     }
 }

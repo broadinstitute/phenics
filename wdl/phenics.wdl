@@ -1,8 +1,13 @@
 version 1.0
 
+struct DataAndIndex {
+    File data
+    File index
+}
+
 workflow phenics {
     input {
-        Array[File] vcf_files
+        Array[DataAndIndex] vcf_files
         File phenotypes_file
         String output_file_name
     }
@@ -24,7 +29,7 @@ workflow phenics {
 
 task process_vcf {
     input {
-        File vcf_file
+        DataAndIndex vcf_file
         File phenotypes_file
         String output_file_name
     }
@@ -35,7 +40,7 @@ task process_vcf {
         }
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.31"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.32"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
     }
@@ -43,7 +48,8 @@ task process_vcf {
         set -e
         export RUST_BACKTRACE=1
         echo "Now running phenics sample for ~{vcf_file}"
-        phenics gcs-sample -d ~{vcf_file} -p ~{phenotypes_file} -r 1000 -x 10000000 -o ~{output_file_name}
+        phenics gcs-sample -d ~{vcf_file.data} -i ~{vcf_file.index} -p ~{phenotypes_file} -r 1000 -x 10000000 \
+                           -o ~{output_file_name}
     >>>
     output {
         File output_file = output_file_name
@@ -57,7 +63,7 @@ task merge {
         String output_file_name
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.31"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.32"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
     }
