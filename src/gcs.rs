@@ -97,9 +97,18 @@ impl Intake {
     }
 }
 
+fn debug_bytes(context: &str, bytes: &Option<Bytes>) {
+    if let Some(bytes) = bytes {
+        println!("{}: Bytes is some with len={}", context, bytes.len())
+    } else {
+        println!("{}: Bytes is none", context)
+    }
+}
+
 impl Read for GcsReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let GcsReader { runtime, intake, .. } = self;
+        debug_bytes("Initially", &intake.bytes);
         let need_next_bytes =
             if let Some(bytes) = &intake.bytes {
                 bytes.is_empty()
@@ -121,6 +130,9 @@ impl Read for GcsReader {
             })?;
             intake.bytes = bytes;
         }
+        if need_next_bytes {
+            debug_bytes("After loading", &intake.bytes);
+        }
         match &mut intake.bytes {
             None => { Ok(0usize) }
             Some(bytes) => {
@@ -130,6 +142,7 @@ impl Read for GcsReader {
                     let n_bytes = std::cmp::min(buf.len(), bytes.len());
                     bytes.split_to(n_bytes).copy_to_slice(&mut buf[0..n_bytes]);
                     intake.pos += n_bytes as u64;
+                    debug_bytes("After reading", &intake.bytes);
                     Ok(n_bytes)
                 }
             }

@@ -1,1 +1,1 @@
-sudo docker run -it gcr.io/nitrogenase-docker/phenics:0.2.32 bash
+sudo docker run -it gcr.io/nitrogenase-docker/phenics:0.2.33 bash
