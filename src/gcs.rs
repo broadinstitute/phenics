@@ -79,6 +79,7 @@ impl Intake {
             }
             let size = http::parse_size(&response)?;
             let mut bytes_stream = Box::pin(response.bytes_stream());
+            println!("Next bytes!");
             let bytes = match bytes_stream.next().await {
                 None => None,
                 Some(result) => Some(result?)
@@ -145,6 +146,7 @@ impl Read for GcsReader {
                 };
                 Ok::<Option<Bytes>, io::Error>(bytes)
             })?;
+            println!("Next bytes!");
             intake.bytes = bytes;
         }
         if need_next_bytes {
