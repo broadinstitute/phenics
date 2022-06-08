@@ -57,6 +57,14 @@ impl GcsReader {
     }
 }
 
+fn debug_bytes_opt(bytes: &Option<Bytes>) {
+    if let Some(bytes) = bytes {
+        println!("=== begin bytes ===\n{}\n=== end bytes", String::from_utf8_lossy(&bytes[..]));
+    } else {
+        println!("bytes is None.")
+    }
+ }
+
 impl Intake {
     fn new(bytes_stream: Pin<Box<dyn Stream<Item=reqwest::Result<Bytes>>>>, bytes: Option<Bytes>,
            pos: u64, size: Option<u64>)
@@ -87,6 +95,7 @@ impl Intake {
             println!("Got {} bytes in open()!", bytes.as_ref().map(|bytes| {
                 bytes.len()
             }).unwrap_or(0));
+            debug_bytes_opt(&bytes);
             let pos = range.from.unwrap_or(0);
             Ok(Intake::new(bytes_stream, bytes, pos, size))
         })
@@ -126,6 +135,7 @@ impl Read for GcsReader {
             println!("Got {} bytes in read()!", bytes.as_ref().map(|bytes| {
                 bytes.len()
             }).unwrap_or(0));
+            debug_bytes_opt(&bytes);
             intake.bytes = bytes;
         }
         match &mut intake.bytes {
