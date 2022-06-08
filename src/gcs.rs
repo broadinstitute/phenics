@@ -97,9 +97,26 @@ impl Intake {
     }
 }
 
-fn debug_bytes(context: &str, bytes: &Option<Bytes>) {
+fn bytes_debug_string(bytes: &Bytes) -> String {
+    const LEN_MAX: usize = 16;
+    const LEN_PARTS: usize = (LEN_MAX - 2) / 2;
+    let len_bytes = bytes.len();
+    if len_bytes <= LEN_MAX {
+        format!("{:02X?}", &bytes[..])
+    } else {
+        let prefix = &bytes[0..LEN_PARTS];
+        let suffix = &bytes[(len_bytes - LEN_PARTS)..len_bytes];
+        format!("{:02X?}..{:02X?}", prefix, suffix)
+    }
+}
+
+fn debug_bytes(context: &str, bytes: &Bytes) {
+    println!("{}: Bytes ({}): {}", context, bytes.len(), bytes_debug_string(bytes))
+}
+
+fn debug_bytes_opt(context: &str, bytes: &Option<Bytes>) {
     if let Some(bytes) = bytes {
-        println!("{}: Bytes is some with len={}", context, bytes.len())
+        debug_bytes(context, bytes);
     } else {
         println!("{}: Bytes is none", context)
     }
@@ -108,7 +125,7 @@ fn debug_bytes(context: &str, bytes: &Option<Bytes>) {
 impl Read for GcsReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let GcsReader { runtime, intake, .. } = self;
-        debug_bytes("Initially", &intake.bytes);
+        debug_bytes_opt("Initially", &intake.bytes);
         let need_next_bytes =
             if let Some(bytes) = &intake.bytes {
                 bytes.is_empty()
@@ -131,7 +148,7 @@ impl Read for GcsReader {
             intake.bytes = bytes;
         }
         if need_next_bytes {
-            debug_bytes("After loading", &intake.bytes);
+            debug_bytes_opt("After loading", &intake.bytes);
         }
         match &mut intake.bytes {
             None => { Ok(0usize) }
@@ -140,9 +157,13 @@ impl Read for GcsReader {
                     Ok(0)
                 } else {
                     let n_bytes = std::cmp::min(buf.len(), bytes.len());
-                    bytes.split_to(n_bytes).copy_to_slice(&mut buf[0..n_bytes]);
+                    let mut bytes_to_read = bytes.split_to(n_bytes);
+                    println!("bytes.len()={}, buf.len={}, n_bytes={}, bytes_to_read.len()={}",
+                             bytes.len(), buf.len(), n_bytes, bytes_to_read.len());
+                    debug_bytes("Bytes to read", &bytes_to_read);
+                    bytes_to_read.copy_to_slice(&mut buf[0..n_bytes]);
                     intake.pos += n_bytes as u64;
-                    debug_bytes("After reading", &intake.bytes);
+                    debug_bytes_opt("After reading", &intake.bytes);
                     Ok(n_bytes)
                 }
             }
