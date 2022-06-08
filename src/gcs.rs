@@ -78,8 +78,9 @@ impl Intake {
                 return Err(Error::from(format!("{} ({})", status_code, url)));
             }
             let size = http::parse_size(&response)?;
+            println!("HTTP response size: {:?}", size);
             let mut bytes_stream = Box::pin(response.bytes_stream());
-            println!("Next bytes!");
+            println!("Next bytes in open()!");
             let bytes = match bytes_stream.next().await {
                 None => None,
                 Some(result) => Some(result?)
@@ -146,7 +147,7 @@ impl Read for GcsReader {
                 };
                 Ok::<Option<Bytes>, io::Error>(bytes)
             })?;
-            println!("Next bytes!");
+            println!("Next bytes in read()!");
             intake.bytes = bytes;
         }
         if need_next_bytes {
@@ -177,7 +178,7 @@ impl Read for GcsReader {
 fn add_u64_i64(x: u64, y: i64) -> u64 {
     if y == 0 {
         x
-    } else if x > 0 {
+    } else if y > 0 {
         x + (y as u64)
     } else {
         x - ((-y) as u64)
@@ -186,6 +187,7 @@ fn add_u64_i64(x: u64, y: i64) -> u64 {
 
 impl Seek for GcsReader {
     fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
+        println!("Seek! {:?}", pos);
         let pos = match pos {
             SeekFrom::Start(pos) => { pos }
             SeekFrom::End(pos_end) => {
