@@ -77,8 +77,7 @@ fn read_region<P: RecordProcessor>(vcf_header: &vcf::Header, index: &Index, data
         for record in vcf_reader.records(vcf_header) {
             let record = record?;
             let record_position =
-                usize::try_from(i32::from(record.position()))
-                    .and_then(core::Position::try_from)?;
+                core::Position::try_from(usize::from(record.position()))?;
             if region.interval().contains(&record_position) {
                 n_records += 1;
                 record_processor.process_record(&record)?;

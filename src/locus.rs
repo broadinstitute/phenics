@@ -3,13 +3,13 @@ use std::fmt::{Display, Formatter};
 
 pub(crate) struct Locus {
     chrom: String,
-    pos: u32,
+    pos: usize,
 }
 
 impl Locus {
     pub(crate) fn new(chromosome: &Chromosome, position: &Position) -> Locus {
         let chrom = format!("{}", chromosome);
-        let pos = i32::from(*position) as u32;
+        let pos = usize::from(*position);
         Locus { chrom, pos }
     }
 }

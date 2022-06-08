@@ -41,7 +41,7 @@ impl Iterator for RegionIter {
         self.cursor += self.region_size;
         let end = Position::try_from(self.cursor).unwrap();
         if self.cursor < MAX_POS {
-            Some(Region::new(self.chrom.clone(), start..end))
+            Some(Region::new(self.chrom.clone(), start..=end))
         } else {
             None
         }

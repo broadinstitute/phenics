@@ -17,5 +17,5 @@ pub(crate) fn parse(string: &str) -> Result<Region, Error> {
     let end =
         Position::try_from(limits.next().ok_or_else(|| { parse_error(string) })?
             .parse::<usize>()?)?;
-    Ok(Region::new(chrom, start..end))
+    Ok(Region::new(chrom, start..=end))
 }
