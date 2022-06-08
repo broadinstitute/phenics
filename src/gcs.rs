@@ -12,6 +12,11 @@ use crate::http::Range;
 use crate::http;
 use crate::gc_auth::GCAuth;
 
+pub(crate) struct GcsObject {
+    bucket: String,
+    object: String,
+}
+
 pub(crate) struct GcsReader {
     url: String,
     runtime: Runtime,
@@ -26,21 +31,40 @@ struct Intake {
     size: Option<u64>,
 }
 
+fn url_parse_error(url: &str) -> Error {
+    Error::from(format!("Cannot parse `{}` as a GCS URL.", url))
+}
+
+impl GcsObject {
+    pub(crate) fn parse_url(url: &str) -> Result<GcsObject, Error> {
+        let stripped =
+            url.strip_prefix("gs://").ok_or_else(|| url_parse_error(url))?;
+        let (bucket, object) =
+            stripped.split_once('/').ok_or_else(|| url_parse_error(url))?;
+        let bucket = bucket.to_string();
+        let object = object.to_string();
+        Ok(GcsObject { bucket, object })
+    }
+    pub(crate) fn as_api_url(&self) -> String {
+        format!("https://storage.googleapis.com/storage/v1/b/{}/o/{}", self.bucket, self.object)
+    }
+}
+
 impl GcsReader {
-    pub(crate) fn get_url(url_raw: &str) -> String {
-        if let Some(path) = url_raw.strip_prefix("gs://") {
-            format!("https://storage.cloud.google.com/{}", path)
+    pub(crate) fn get_url(url_raw: &str) -> Result<String, Error> {
+        if url_raw.starts_with("gs://") {
+            Ok(GcsObject::parse_url(url_raw)?.as_api_url())
         } else {
-            String::from(url_raw)
+            Ok(String::from(url_raw))
         }
     }
     pub(crate) fn connect(url: &str) -> Result<GcsReader, Error> {
-        let url = GcsReader::get_url(url);
+        let url = GcsReader::get_url(url)?;
         let range = Range::new_from(0);
         GcsReader::new(url, &range)
     }
     pub(crate) fn connect_range(url: &str, range: &Range) -> Result<GcsReader, Error> {
-        let url = GcsReader::get_url(url);
+        let url = GcsReader::get_url(url)?;
         GcsReader::new(url, range)
     }
     pub(crate) fn new(url: String, range: &Range) -> Result<GcsReader, Error> {
@@ -57,14 +81,6 @@ impl GcsReader {
     }
 }
 
-fn debug_bytes_opt(bytes: &Option<Bytes>) {
-    if let Some(bytes) = bytes {
-        println!("=== begin bytes ===\n{}\n=== end bytes", String::from_utf8_lossy(&bytes[..]));
-    } else {
-        println!("bytes is None.")
-    }
- }
-
 impl Intake {
     fn new(bytes_stream: Pin<Box<dyn Stream<Item=reqwest::Result<Bytes>>>>, bytes: Option<Bytes>,
            pos: u64, size: Option<u64>)
@@ -77,6 +93,7 @@ impl Intake {
             let token = gc_auth.get_token().await?;
             let request =
                 http::add_bearer_auth(Intake::build_request(url, range), &token);
+            println!("=== begin request ===\n{:?}\n=== end request===", request);
             let response = request.send().await?;
             let status_code = response.status();
             if !status_code.is_success() {
@@ -95,7 +112,6 @@ impl Intake {
             println!("Got {} bytes in open()!", bytes.as_ref().map(|bytes| {
                 bytes.len()
             }).unwrap_or(0));
-            debug_bytes_opt(&bytes);
             let pos = range.from.unwrap_or(0);
             Ok(Intake::new(bytes_stream, bytes, pos, size))
         })
@@ -135,7 +151,6 @@ impl Read for GcsReader {
             println!("Got {} bytes in read()!", bytes.as_ref().map(|bytes| {
                 bytes.len()
             }).unwrap_or(0));
-            debug_bytes_opt(&bytes);
             intake.bytes = bytes;
         }
         match &mut intake.bytes {
