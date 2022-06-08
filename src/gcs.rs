@@ -98,7 +98,7 @@ impl Intake {
 }
 
 fn bytes_debug_string(bytes: &Bytes) -> String {
-    const LEN_MAX: usize = 16;
+    const LEN_MAX: usize = 32;
     const LEN_PARTS: usize = (LEN_MAX - 2) / 2;
     let len_bytes = bytes.len();
     if len_bytes <= LEN_MAX {
@@ -156,10 +156,11 @@ impl Read for GcsReader {
                 if bytes.is_empty() {
                     Ok(0)
                 } else {
-                    let n_bytes = std::cmp::min(buf.len(), bytes.len());
+                    let len_bytes = bytes.len();
+                    let n_bytes = std::cmp::min(buf.len(), len_bytes);
                     let mut bytes_to_read = bytes.split_to(n_bytes);
                     println!("bytes.len()={}, buf.len={}, n_bytes={}, bytes_to_read.len()={}",
-                             bytes.len(), buf.len(), n_bytes, bytes_to_read.len());
+                             len_bytes, buf.len(), n_bytes, bytes_to_read.len());
                     debug_bytes("Bytes to read", &bytes_to_read);
                     bytes_to_read.copy_to_slice(&mut buf[0..n_bytes]);
                     intake.pos += n_bytes as u64;
