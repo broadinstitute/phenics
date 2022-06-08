@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::io::{Read, Seek, SeekFrom};
 use tokio::runtime::Runtime;
 use crate::error::Error;
@@ -26,7 +27,7 @@ struct Intake {
 }
 
 impl GcsReader {
-    pub(crate)  fn get_url(url_raw: &str) -> String {
+    pub(crate) fn get_url(url_raw: &str) -> String {
         if let Some(path) = url_raw.strip_prefix("gs://") {
             format!("https://storage.cloud.google.com/{}", path)
         } else {
@@ -72,19 +73,20 @@ impl Intake {
             let status_code = response.status();
             if !status_code.is_success() {
                 match response.text().await {
-                    Ok(text) => { println!("===\n{}\n===", text)}
-                    Err(error) => { println!("===\n{}\n===", error)}
+                    Ok(text) => { println!("===\n{}\n===", text) }
+                    Err(error) => { println!("===\n{}\n===", error) }
                 }
                 return Err(Error::from(format!("{} ({})", status_code, url)));
             }
             let size = http::parse_size(&response)?;
-            println!("HTTP response size: {:?}", size);
             let mut bytes_stream = Box::pin(response.bytes_stream());
-            println!("Next bytes in open()!");
             let bytes = match bytes_stream.next().await {
                 None => None,
                 Some(result) => Some(result?)
             };
+            println!("Got {} bytes in open()!", bytes.as_ref().map(|bytes| {
+                bytes.len()
+            }).unwrap_or(0));
             let pos = range.from.unwrap_or(0);
             Ok(Intake::new(bytes_stream, bytes, pos, size))
         })
@@ -99,35 +101,9 @@ impl Intake {
     }
 }
 
-fn bytes_debug_string(bytes: &Bytes) -> String {
-    const LEN_MAX: usize = 32;
-    const LEN_PARTS: usize = (LEN_MAX - 2) / 2;
-    let len_bytes = bytes.len();
-    if len_bytes <= LEN_MAX {
-        format!("{:02X?}", &bytes[..])
-    } else {
-        let prefix = &bytes[0..LEN_PARTS];
-        let suffix = &bytes[(len_bytes - LEN_PARTS)..len_bytes];
-        format!("{:02X?}..{:02X?}", prefix, suffix)
-    }
-}
-
-fn debug_bytes(context: &str, bytes: &Bytes) {
-    println!("{}: Bytes ({}): {}", context, bytes.len(), bytes_debug_string(bytes))
-}
-
-fn debug_bytes_opt(context: &str, bytes: &Option<Bytes>) {
-    if let Some(bytes) = bytes {
-        debug_bytes(context, bytes);
-    } else {
-        println!("{}: Bytes is none", context)
-    }
-}
-
 impl Read for GcsReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let GcsReader { runtime, intake, .. } = self;
-        debug_bytes_opt("Initially", &intake.bytes);
         let need_next_bytes =
             if let Some(bytes) = &intake.bytes {
                 bytes.is_empty()
@@ -147,11 +123,10 @@ impl Read for GcsReader {
                 };
                 Ok::<Option<Bytes>, io::Error>(bytes)
             })?;
-            println!("Next bytes in read()!");
+            println!("Got {} bytes in read()!", bytes.as_ref().map(|bytes| {
+                bytes.len()
+            }).unwrap_or(0));
             intake.bytes = bytes;
-        }
-        if need_next_bytes {
-            debug_bytes_opt("After loading", &intake.bytes);
         }
         match &mut intake.bytes {
             None => { Ok(0usize) }
@@ -164,10 +139,8 @@ impl Read for GcsReader {
                     let mut bytes_to_read = bytes.split_to(n_bytes);
                     println!("bytes.len()={}, buf.len={}, n_bytes={}, bytes_to_read.len()={}",
                              len_bytes, buf.len(), n_bytes, bytes_to_read.len());
-                    debug_bytes("Bytes to read", &bytes_to_read);
                     bytes_to_read.copy_to_slice(&mut buf[0..n_bytes]);
                     intake.pos += n_bytes as u64;
-                    debug_bytes_opt("After reading", &intake.bytes);
                     Ok(n_bytes)
                 }
             }
@@ -176,18 +149,15 @@ impl Read for GcsReader {
 }
 
 fn add_u64_i64(x: u64, y: i64) -> u64 {
-    if y == 0 {
-        x
-    } else if y > 0 {
-        x + (y as u64)
-    } else {
-        x - ((-y) as u64)
+    match y.cmp(&0_i64) {
+        Ordering::Less => { x - ((-y) as u64) }
+        Ordering::Equal => { x }
+        Ordering::Greater => { x + (y as u64) }
     }
 }
 
 impl Seek for GcsReader {
     fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
-        println!("Seek! {:?}", pos);
         let pos = match pos {
             SeekFrom::Start(pos) => { pos }
             SeekFrom::End(pos_end) => {
