@@ -11,6 +11,7 @@ use reqwest::RequestBuilder;
 use crate::http::Range;
 use crate::http;
 use crate::gc_auth::GCAuth;
+use urlencoding::encode;
 
 pub(crate) struct GcsObject {
     bucket: String,
@@ -46,7 +47,8 @@ impl GcsObject {
         Ok(GcsObject { bucket, object })
     }
     pub(crate) fn as_api_url(&self) -> String {
-        format!("https://storage.googleapis.com/storage/v1/b/{}/o/{}", self.bucket, self.object)
+        format!("https://storage.googleapis.com/storage/v1/b/{}/o/{}",
+                encode(&self.bucket), encode(&self.object))
     }
 }
 
