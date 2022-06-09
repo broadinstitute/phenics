@@ -1,6 +1,8 @@
 {
   "phenics.output_file_name": "phenotype_results",
   "phenics.phenotypes_file": "gs://fc-4acc7af3-6463-4452-80c1-98c8b6cf95d5/phenics/phenotypes",
+  "phenics.interval_size": 1000,
+  "phenics.max_step_size": 1000000,
   "phenics.vcf_files": [
     {
       "data": "gs://fc-adaae650-a458-4c56-8a55-d96fa463a5c6/b9d0bb48-bddd-4f38-960a-31136f0fce1a/w/677a54e8-706b-4936-a3e5-0ec93b64d0e8/call-runVcf/shard-0/freeze.5b.chr1.phased.pass.minDP0.remDuplicates.vcf.bgz",

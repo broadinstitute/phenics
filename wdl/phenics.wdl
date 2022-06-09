@@ -9,6 +9,8 @@ workflow phenics {
     input {
         Array[DataAndIndex] vcf_files
         File phenotypes_file
+        Int interval_size
+        Int max_step_size
         String output_file_name
     }
     scatter(vcf_file in vcf_files) {
@@ -17,6 +19,8 @@ workflow phenics {
                 vcf_file = vcf_file.data,
                 index = vcf_file.index,
                 phenotypes_file = phenotypes_file,
+                interval_size = interval_size,
+                max_step_size = max_step_size,
                 output_file_name = "liabilities"
         }
     }
@@ -33,6 +37,8 @@ task process_vcf {
         File vcf_file
         File index
         File phenotypes_file
+        Int interval_size
+        Int max_step_size
         String output_file_name
     }
     parameter_meta {
@@ -46,7 +52,7 @@ task process_vcf {
         }
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.45"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.46"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
     }
@@ -54,7 +60,8 @@ task process_vcf {
         set -e
         export RUST_BACKTRACE=1
         echo "Now running phenics sample for ~{vcf_file} and ~{index}"
-        phenics gcs-sample -d ~{vcf_file} -i ~{index} -p ~{phenotypes_file} -r 1000 -x 10000000 -o ~{output_file_name}
+        phenics gcs-sample -d ~{vcf_file} -i ~{index} -p ~{phenotypes_file} -r ~{interval_size} -x ~{max_step_size} \
+                           -o ~{output_file_name}
     >>>
     output {
         File output_file = output_file_name
@@ -68,7 +75,7 @@ task merge {
         String output_file_name
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.45"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.46"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
     }

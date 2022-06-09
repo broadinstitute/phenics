@@ -76,9 +76,11 @@ impl GcsReader {
         Ok(GcsReader { url, runtime, intake, gc_auth })
     }
     fn seek_pos(&mut self, pos: u64) -> std::io::Result<()> {
-        self.intake =
-            Intake::open(&self.url, &self.runtime, &Range::new_from(pos), &self.gc_auth)
-                .map_err(|error| { error.into_io_error() })?;
+        if self.intake.pos != pos {
+            self.intake =
+                Intake::open(&self.url, &self.runtime, &Range::new_from(pos), &self.gc_auth)
+                    .map_err(|error| { error.into_io_error() })?;
+        }
         Ok(())
     }
 }
