@@ -81,6 +81,10 @@ fn read_region<P: RecordProcessor>(vcf_header: &vcf::Header, index: &Index, data
             if region.interval().contains(&record_position) {
                 n_records += 1;
                 record_processor.process_record(&record)?;
+            } else if let Some(end) = region.interval().end() {
+                if record_position > end {
+                    break;
+                }
             }
         }
     }
