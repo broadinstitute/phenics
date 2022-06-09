@@ -47,7 +47,7 @@ impl GcsObject {
         Ok(GcsObject { bucket, object })
     }
     pub(crate) fn as_api_url(&self) -> String {
-        format!("https://storage.googleapis.com/storage/v1/b/{}/o/{}",
+        format!("https://storage.googleapis.com/storage/v1/b/{}/o/{}?alt=media",
                 encode(&self.bucket), encode(&self.object))
     }
 }
@@ -111,9 +111,6 @@ impl Intake {
                 None => None,
                 Some(result) => Some(result?)
             };
-            println!("Got {} bytes in open()!", bytes.as_ref().map(|bytes| {
-                bytes.len()
-            }).unwrap_or(0));
             let pos = range.from.unwrap_or(0);
             Ok(Intake::new(bytes_stream, bytes, pos, size))
         })
@@ -150,9 +147,6 @@ impl Read for GcsReader {
                 };
                 Ok::<Option<Bytes>, io::Error>(bytes)
             })?;
-            println!("Got {} bytes in read()!", bytes.as_ref().map(|bytes| {
-                bytes.len()
-            }).unwrap_or(0));
             intake.bytes = bytes;
         }
         match &mut intake.bytes {
@@ -164,8 +158,6 @@ impl Read for GcsReader {
                     let len_bytes = bytes.len();
                     let n_bytes = std::cmp::min(buf.len(), len_bytes);
                     let mut bytes_to_read = bytes.split_to(n_bytes);
-                    println!("bytes.len()={}, buf.len={}, n_bytes={}, bytes_to_read.len()={}",
-                             len_bytes, buf.len(), n_bytes, bytes_to_read.len());
                     bytes_to_read.copy_to_slice(&mut buf[0..n_bytes]);
                     intake.pos += n_bytes as u64;
                     Ok(n_bytes)
