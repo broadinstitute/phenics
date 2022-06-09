@@ -1,7 +1,7 @@
 use noodles::core::{Position, Region};
 use rand::Rng;
 
-const MAX_POS: usize = 1 << 32;
+const MAX_POS: usize = 1 << 29;
 
 pub(crate) struct RegionIterGen {
     region_size: usize,
@@ -40,7 +40,7 @@ impl Iterator for RegionIter {
         let start = Position::try_from(self.cursor).unwrap();
         self.cursor += self.region_size;
         let end = Position::try_from(self.cursor).unwrap();
-        if self.cursor < MAX_POS {
+        if self.cursor <= MAX_POS {
             Some(Region::new(self.chrom.clone(), start..=end))
         } else {
             None
