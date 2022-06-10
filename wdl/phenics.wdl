@@ -52,7 +52,7 @@ task process_vcf {
         }
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.47"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.48"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
     }
@@ -75,13 +75,13 @@ task merge {
         String output_file_name
     }
     runtime {
-        docker: "gcr.io/nitrogenase-docker/phenics:0.2.47"
+        docker: "gcr.io/nitrogenase-docker/phenics:0.2.48"
         memory: "16 GB"
         disks: "local-disk 80 HDD"
     }
     command <<<
         set -e
-        phenics merge -i ~{liabilities_files} -o merged
+        phenics merge -i ~{sep=' ' liabilities_files} -o merged
         phenics render -i merged -p ~{phenotypes_file} -o ~{output_file_name}
     >>>
     output {

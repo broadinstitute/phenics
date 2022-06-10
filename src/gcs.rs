@@ -99,6 +99,11 @@ impl Intake {
                 http::add_bearer_auth(Intake::build_request(url, range), &token);
             println!("=== begin request ===\n{:?}\n=== end request===", request);
             let response = request.send().await?;
+            println!("=== begin response meta ===");
+            println!("Status: {}", response.status());
+            println!("content-length: {:?}", response.content_length());
+            println!("{:?}", response.headers());
+            println!("=== end response meta ===");
             let status_code = response.status();
             if !status_code.is_success() {
                 match response.text().await {
