@@ -118,13 +118,13 @@ fn read_region<P: RecordProcessor>(vcf_header: &vcf::Header, index: &Index, data
             if region.interval().contains(&record_position) {
                 n_records += 1;
                 status_reporter.count_record();
-                status_reporter.report_maybe();
                 record_processor.process_record(&record)?;
             } else if let Some(end) = region.interval().end() {
                 if record_position > end {
                     break;
                 }
             }
+            status_reporter.report_maybe();
         }
         println!("Done with chunk");
         status_reporter.report();
