@@ -1,4 +1,5 @@
 use std::ops::RangeBounds;
+use std::time::{Duration, Instant};
 use noodles::{bgzf, vcf, core};
 use crate::config::GcsTabixConfig;
 use crate::Error;
@@ -62,11 +63,45 @@ pub(crate) fn read_vcf_header(data_url: &str) -> Result<vcf::Header, Error> {
     Ok(vcf_header)
 }
 
+struct StatusReporter {
+    start: Instant,
+    duration_old: Duration,
+    n_records_old: usize,
+    n_records: usize,
+}
+
+impl StatusReporter {
+    fn new() -> StatusReporter {
+        let start = Instant::now();
+        let duration_previously = start.elapsed();
+        let n_records_old = 0;
+        let n_records = 0;
+        StatusReporter { start, duration_old: duration_previously, n_records_old, n_records }
+    }
+    fn count_record(&mut self) {
+        self.n_records += 1
+    }
+    fn report(&mut self) {
+        let duration = self.start.elapsed();
+        println!("After {} seconds, read {} records", duration.as_secs(), self.n_records);
+        self.duration_old = duration;
+        self.n_records_old = self.n_records;
+    }
+    fn report_maybe(&mut self) {
+        let duration = self.start.elapsed();
+        if duration.as_secs() > self.duration_old.as_secs() + 10 ||
+            self.n_records > self.n_records_old + 100 {
+            self.report();
+        }
+    }
+}
+
 fn read_region<P: RecordProcessor>(vcf_header: &vcf::Header, index: &Index, data_url: &str,
                                    i_chrom: usize, region: &core::Region, record_processor: &mut P)
                                    -> Result<usize, Error> {
     let chunks = index.query(i_chrom, region.interval())?;
     let mut n_records: usize = 0;
+    println!("Got {} chunks for {}", chunks.len(), region);
     for chunk in chunks {
         let range =
             Range::new(Some(chunk.start().compressed()),
@@ -75,12 +110,15 @@ fn read_region<P: RecordProcessor>(vcf_header: &vcf::Header, index: &Index, data
             bgzf::Reader::new(GcsReader::connect_range(data_url, &range)?);
         bgzf_reader.seek(chunk.start())?;
         let mut vcf_reader = vcf::Reader::new(bgzf_reader);
+        let mut status_reporter = StatusReporter::new();
         for record in vcf_reader.records(vcf_header) {
             let record = record?;
             let record_position =
                 core::Position::try_from(usize::from(record.position()))?;
             if region.interval().contains(&record_position) {
                 n_records += 1;
+                status_reporter.count_record();
+                status_reporter.report_maybe();
                 record_processor.process_record(&record)?;
             } else if let Some(end) = region.interval().end() {
                 if record_position > end {
@@ -88,6 +126,8 @@ fn read_region<P: RecordProcessor>(vcf_header: &vcf::Header, index: &Index, data
                 }
             }
         }
+        println!("Done with chunk");
+        status_reporter.report();
     }
     Ok(n_records)
 }
