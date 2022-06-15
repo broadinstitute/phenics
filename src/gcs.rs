@@ -22,6 +22,7 @@ pub(crate) struct GcsReader {
     url: String,
     runtime: Runtime,
     gc_auth: GCAuth,
+    to: Option<u64>,
     intake: Intake,
 }
 
@@ -73,14 +74,14 @@ impl GcsReader {
         let runtime = Runtime::new()?;
         let gc_auth = runtime.block_on(async { GCAuth::new().await })?;
         let intake = Intake::open(&url, &runtime, range, &gc_auth)?;
-        Ok(GcsReader { url, runtime, intake, gc_auth })
+        let to = range.to;
+        Ok(GcsReader { url, runtime, intake, gc_auth, to })
     }
     fn seek_pos(&mut self, pos: u64) -> std::io::Result<()> {
-        // if self.intake.pos != pos {
-            self.intake =
-                Intake::open(&self.url, &self.runtime, &Range::new_from(pos), &self.gc_auth)
-                    .map_err(|error| { error.into_io_error() })?;
-        // }
+        self.intake =
+            Intake::open(&self.url, &self.runtime, &Range::new(Some(pos), self.to),
+                         &self.gc_auth)
+                .map_err(|error| { error.into_io_error() })?;
         Ok(())
     }
 }
