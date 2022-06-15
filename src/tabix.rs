@@ -105,7 +105,7 @@ fn read_region<P: RecordProcessor>(vcf_header: &vcf::Header, index: &Index, data
     for chunk in chunks {
         let range =
             Range::new(Some(chunk.start().compressed()),
-                       Some(chunk.end().compressed() - 1));
+                       Some(chunk.end().compressed()));
         let mut bgzf_reader =
             bgzf::Reader::new(GcsReader::connect_range(data_url, &range)?);
         bgzf_reader.seek(chunk.start())?;
