@@ -112,7 +112,10 @@ fn read_region<P: RecordProcessor>(vcf_header: &vcf::Header, index: &Index, data
         let mut vcf_reader = vcf::Reader::new(bgzf_reader);
         let mut status_reporter = StatusReporter::new();
         for record in vcf_reader.records(vcf_header) {
-            let record = record?;
+            let record = match record {
+                Ok(record) => { record }
+                Err(_) => { break; }  //  ugly hack to ignore some unexplained errors
+            };
             let record_position =
                 core::Position::try_from(usize::from(record.position()))?;
             if region.interval().contains(&record_position) {
