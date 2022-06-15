@@ -124,10 +124,12 @@ fn read_region<P: RecordProcessor>(vcf_header: &vcf::Header, index: &Index, data
                     println!("Record position {} after of region {} - break.",
                              record_position, region.interval());
                     break;
+                } else {
+                    println!("Record position {} before (?) of region {} - continue.",
+                             record_position, region.interval());
                 }
             } else {
-                println!("Record position {} before (?) of region {} - continue.",
-                         record_position, region.interval());
+                println!("Region {} does not seem to have an end.", region.interval());
             }
             status_reporter.report_maybe();
         }
