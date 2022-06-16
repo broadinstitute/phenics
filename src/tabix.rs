@@ -104,9 +104,10 @@ fn read_region<P: RecordProcessor>(index: &Index, data_url: &str, i_chrom: usize
     let mut n_records: usize = 0;
     println!("Got {} chunks for {}", chunks.len(), region);
     for chunk in chunks {
+        const PADDING: u64 = 65536;
         let range =
             Range::new(Some(chunk.start().compressed()),
-                       Some(chunk.end().compressed() + 1));
+                       Some(chunk.end().compressed() + PADDING));
         let mut bgzf_reader =
             bgzf::Reader::new(GcsReader::connect_range(data_url, &range)?);
         bgzf_reader.seek(chunk.start())?;
@@ -119,7 +120,13 @@ fn read_region<P: RecordProcessor>(index: &Index, data_url: &str, i_chrom: usize
                 println!("Empty record buffer -  end of input? break.");
                 break;
             }
-            let record = record_buffer.parse::<Record>()?;
+            let record = match record_buffer.parse::<Record>() {
+                Ok(record) => { record }
+                Err(error) => {
+                    println!("We're assuming the chunk has ended: {}", error);
+                    break;
+                }
+            };
             let record_position =
                 core::Position::try_from(usize::from(record.position()))?;
             if region.interval().contains(&record_position) {
