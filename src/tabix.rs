@@ -115,6 +115,10 @@ fn read_region<P: RecordProcessor>(index: &Index, data_url: &str, i_chrom: usize
         loop {
             let mut record_buffer = String::new();
             vcf_reader.read_record(&mut record_buffer)?;
+            if record_buffer.is_empty() {
+                println!("Empty record buffer -  end of input? break.");
+                break;
+            }
             let record = record_buffer.parse::<Record>()?;
             let record_position =
                 core::Position::try_from(usize::from(record.position()))?;
