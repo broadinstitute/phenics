@@ -6,9 +6,11 @@ use crate::Error;
 use noodles::tabix::{Index, Reader};
 use crate::gcs::GcsReader;
 use noodles::csi::binning_index::BinningIndex;
+use noodles::vcf::Record;
 use crate::http::Range;
 use crate::records::{RecordPrinter, RecordProcessor};
 use crate::region_iter::RegionIterGen;
+use std::string::String;
 
 pub(crate) fn tabix(config: &GcsTabixConfig) -> Result<(), Error> {
     let mut record_processor = RecordPrinter::new();
@@ -21,10 +23,9 @@ pub(crate) fn process_region<P: RecordProcessor>(data_url: &str, index_url: &str
                                                  region: &core::Region, record_processor: &mut P)
                                                  -> Result<usize, Error> {
     let index = read_index(index_url)?;
-    let vcf_header = read_vcf_header(data_url)?;
     let n_records =
         if let Some((i_chrom, _)) = index.reference_sequence_names().get_full(region.name()) {
-            read_region(&vcf_header, &index, data_url, i_chrom, region, record_processor)?
+            read_region(&index, data_url, i_chrom, region, record_processor)?
         } else {
             0
         };
@@ -32,7 +33,7 @@ pub(crate) fn process_region<P: RecordProcessor>(data_url: &str, index_url: &str
 }
 
 pub(crate) fn sample_regions<P: RecordProcessor>(data_url: &str, index_url: &str,
-                                                 vcf_header: &vcf::Header, record_processor: &mut P,
+                                                 record_processor: &mut P,
                                                  region_iter_gen: &RegionIterGen)
                                                  -> Result<usize, Error> {
     let index = read_index(index_url)?;
@@ -42,7 +43,7 @@ pub(crate) fn sample_regions<P: RecordProcessor>(data_url: &str, index_url: &str
         for region in region_iter {
             println!("Now reading region {}.", region);
             let n_records_new =
-                read_region(vcf_header, &index, data_url, i_chrom, &region, record_processor)?;
+                read_region(&index, data_url, i_chrom, &region, record_processor)?;
             println!("Read {} records from region {}.", n_records_new, region);
             n_records += n_records_new;
         }
@@ -96,8 +97,8 @@ impl StatusReporter {
     }
 }
 
-fn read_region<P: RecordProcessor>(vcf_header: &vcf::Header, index: &Index, data_url: &str,
-                                   i_chrom: usize, region: &core::Region, record_processor: &mut P)
+fn read_region<P: RecordProcessor>(index: &Index, data_url: &str, i_chrom: usize,
+                                   region: &core::Region, record_processor: &mut P)
                                    -> Result<usize, Error> {
     let chunks = index.query(i_chrom, region.interval())?;
     let mut n_records: usize = 0;
@@ -111,11 +112,10 @@ fn read_region<P: RecordProcessor>(vcf_header: &vcf::Header, index: &Index, data
         bgzf_reader.seek(chunk.start())?;
         let mut vcf_reader = vcf::Reader::new(bgzf_reader);
         let mut status_reporter = StatusReporter::new();
-        for record in vcf_reader.records(vcf_header) {
-            let record = match record {
-                Ok(record) => { record }
-                Err(_) => { break; }  //  ugly hack to ignore some unexplained errors
-            };
+        loop {
+            let mut record_buffer = String::new();
+            vcf_reader.read_record(&mut record_buffer)?;
+            let record = record_buffer.parse::<Record>()?;
             let record_position =
                 core::Position::try_from(usize::from(record.position()))?;
             if region.interval().contains(&record_position) {
@@ -128,6 +128,10 @@ fn read_region<P: RecordProcessor>(vcf_header: &vcf::Header, index: &Index, data
                              record_position, region.interval());
                     break;
                 }
+            }
+            if vcf_reader.get_ref().virtual_position() >= chunk.end() {
+                println!("Reached end of chunk");
+                break;
             }
             status_reporter.report_maybe();
         }

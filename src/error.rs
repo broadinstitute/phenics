@@ -22,6 +22,7 @@ pub enum ErrorKind {
     ToStr,
     GCAuth,
     TryFromInt,
+    VcfRecordParse,
     Unknown,
 }
 
@@ -150,6 +151,12 @@ impl From<std::num::TryFromIntError> for Error {
     }
 }
 
+impl From<noodles::vcf::record::ParseError> for Error {
+    fn from(record_parse_error: noodles::vcf::record::ParseError) -> Self {
+        Error::from_error(ErrorKind::VcfRecordParse, &record_parse_error)
+    }
+}
+
 impl ErrorKind {
     pub fn as_str(&self) -> &str {
         match self {
@@ -166,6 +173,7 @@ impl ErrorKind {
             ErrorKind::ToStr => { "ToStr"}
             ErrorKind::GCAuth => { "GCAuth"}
             ErrorKind::TryFromInt => { "TryFromInt"}
+            ErrorKind::VcfRecordParse => { "VcfRecordParse"}
             ErrorKind::Unknown => { "[unknown error type]"}
         }
     }

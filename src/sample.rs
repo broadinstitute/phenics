@@ -17,8 +17,8 @@ pub(crate) fn sample(config: &GcsSampleConfig) -> Result<(), Error> {
     let mut sim_processor = SimProcessor::new(&mut sim, &phenotypes);
     let region_iter_gen = RegionIterGen::new(config.region_size, config.step_size_max);
     let n_records =
-        tabix::sample_regions(data, index, &vcf_header,
-                              &mut sim_processor, &region_iter_gen)?;
+        tabix::sample_regions(data, index, &mut sim_processor,
+                              &region_iter_gen)?;
     println!("Read {} records", n_records);
     sim::io::write(&sim, &config.output)?;
     Ok(())
